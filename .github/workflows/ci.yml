@@ -9,14 +9,14 @@ jobs:
     name: Skripte, Configs & SDDM-Themes
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Werkzeuge installieren
         run: |
           sudo apt-get update -q
           sudo apt-get install -y -q shellcheck lua5.4 libegl1 libgl1 libxkbcommon0 libfontconfig1 libdbus-1-3
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
 
@@ -84,7 +84,7 @@ jobs:
 
       - name: Vorschaubilder hochladen
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: sddm-previews
           path: previews/

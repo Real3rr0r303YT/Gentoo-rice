@@ -322,7 +322,7 @@ done
 for entry in "${GENERATED_LINKS[@]}"; do
     ln -sfn "$HOME/${entry#*|}" "$REPO/${entry%%|*}"
 done
-[[ $backed -eq 1 ]] && DONE+=("Backup: $BACKUP") || true
+if [[ $backed -eq 1 ]]; then DONE+=("Backup: $BACKUP"); fi
 "$REPO/scripts/hypr-version.sh"
 xdg-user-dirs-update >/dev/null 2>&1 || true
 gsettings set org.gnome.desktop.interface gtk-theme 'Adwaita-dark'          2>/dev/null || true
@@ -429,7 +429,7 @@ else
         warn "Kein Firefox-Profil gefunden – Firefox einmal starten und ./install.sh erneut ausführen"
     fi
 fi
-[[ $backed -eq 1 && ! " ${DONE[*]} " == *"Backup: $BACKUP"* ]] && DONE+=("Backup: $BACKUP") || true
+if [[ $backed -eq 1 && ! " ${DONE[*]} " == *"Backup: $BACKUP"* ]]; then DONE+=("Backup: $BACKUP"); fi
 DONE+=("Firefox (Standardbrowser, Policies, uBlock Origin, userChrome.css)")
 
 # ── 8. Audio ───────────────────────────────────────────────

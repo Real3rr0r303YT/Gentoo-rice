@@ -70,7 +70,7 @@ missing=0
 for i in "${!KIND[@]}"; do
     [[ -f ${SOURCE[$i]} && ! -s $(thumb_path "${SOURCE[$i]}" "${BADGE[$i]}") ]] && missing=$((missing + 1))
 done
-((missing > 3)) && notify-send -a Wallpaper "Erzeuge $missing Vorschaubilder …" 2>/dev/null || true
+if ((missing > 3)); then notify-send -a Wallpaper "Erzeuge $missing Vorschaubilder …" 2>/dev/null || true; fi
 
 entries() {
     local i

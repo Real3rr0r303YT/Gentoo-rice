@@ -116,7 +116,9 @@ for f in "$REPO"/wallpapers/*.jpg; do
 done
 rmdir "$WALLPAPER_DIR" 2>/dev/null || true
 rm -rf "$HOME/.cache/rice" && ok "$HOME/.cache/rice (Thumbnails) entfernt"
-[[ -f $HOME/.config/btop/btop.conf ]] && sed -i 's/^color_theme *=.*/color_theme = "Default"/' "$HOME/.config/btop/btop.conf" || true
+if [[ -f $HOME/.config/btop/btop.conf ]]; then
+    sed -i 's/^color_theme *=.*/color_theme = "Default"/' "$HOME/.config/btop/btop.conf" || true
+fi
 
 if [[ -f $HOME/.icons/default/index.theme ]] && grep -qE 'WhiteSur-cursors|Bibata-Modern' "$HOME/.icons/default/index.theme"; then
     rm "$HOME/.icons/default/index.theme"; ok "Cursor-Default entfernt"

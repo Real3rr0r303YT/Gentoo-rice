@@ -8,13 +8,22 @@ REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=scripts/links.sh
 source "$REPO/scripts/links.sh"
 
+DEV=0
+for arg in "$@"; do
+    case $arg in
+        --dev) DEV=1 ;;
+        -h|--help) printf 'Nutzung: ./install.sh [--dev]\n  --dev  zusätzlich Entwickler-Setup (scripts/dev-setup.sh)\n'; exit 0 ;;
+        *) printf 'Unbekannte Option: %s (siehe --help)\n' "$arg" >&2; exit 1 ;;
+    esac
+done
+
 # ── Ausgabe ────────────────────────────────────────────────
 if [[ -t 1 ]]; then
     B=$'\e[1m'; D=$'\e[2m'; R=$'\e[31m'; G=$'\e[32m'; Y=$'\e[33m'; C=$'\e[36m'; N=$'\e[0m'
 else
     B=; D=; R=; G=; Y=; C=; N=
 fi
-TOTAL=12; STEP=0; CURRENT="Start"
+TOTAL=$((12 + DEV)); STEP=0; CURRENT="Start"
 DONE=()
 step() { STEP=$((STEP + 1)); CURRENT="$*"; printf '\n%s[%2d/%d]%s %s%s%s\n' "$C$B" "$STEP" "$TOTAL" "$N" "$B" "$*" "$N"; }
 info() { printf '  %s•%s %s\n' "$D" "$N" "$*"; }
@@ -339,6 +348,13 @@ fi
 flatpak override --user --filesystem=xdg-config/MangoHud:ro com.valvesoftware.Steam
 ok "Steam installiert"
 DONE+=("gamemode, mangohud, Flatpak + Flathub, Steam")
+
+# ── Dev-Setup (optional) ───────────────────────────────────
+if [[ $DEV -eq 1 ]]; then
+    step "Entwickler-Setup"
+    "$REPO/scripts/dev-setup.sh" || die "Dev-Setup fehlgeschlagen (einzeln: ./scripts/dev-setup.sh)."
+    DONE+=("Dev-Setup: VS Code, Claude Code, Python, Dev-Tools")
+fi
 
 # ── 12. Fertig ─────────────────────────────────────────────
 step "Abschluss"

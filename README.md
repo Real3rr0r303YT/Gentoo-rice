@@ -48,6 +48,29 @@ Steam-Startoptionen für Spiele: `gamemoderun mangohud %command%`
 
 Entfernt die Symlinks und den Autostart und spielt das Backup zurück.
 
+## Dev-Setup
+
+Optionales Entwickler-Setup – zusammen mit dem Rice oder einzeln:
+
+```sh
+./install.sh --dev          # Rice + Dev-Setup
+./scripts/dev-setup.sh      # nur Dev-Setup
+```
+
+| Bereich | Inhalt |
+|---|---|
+| Editor | VS Code (`app-editors/vscode`, Lizenz wird freigegeben), Neovim |
+| KI | Claude Code über den offiziellen nativen Installer, PATH in `~/.bashrc` |
+| Extensions | Claude Code, Python, Pylance, GitLens, Error Lens, GitHub Theme |
+| VS-Code-Look | JetBrains Mono + Ligaturen, Rice-Farben, Custom-Titelleiste, Smooth Scrolling, Wayland (`~/.config/code-flags.conf`) |
+| Python | `dev-lang/python`, pip, pipx (`pipx ensurepath`), venv |
+| Tools | git, GitHub CLI, Node.js + npm, gcc, clang, cmake, make, ripgrep, fd, jq, htop, btop, curl, wget |
+| Git | fragt Name/E-Mail ab, falls nicht gesetzt |
+
+Mehrfach ausführbar; nicht verfügbare Pakete werden gemeldet und übersprungen.
+Eine vorhandene `settings.json` wird vor dem Ersetzen gesichert (`settings.json.bak-<Datum>`).
+Am Ende erscheint eine Übersicht der installierten Versionen.
+
 ## Keybinds
 
 | Taste | Aktion |
@@ -85,6 +108,7 @@ mako/        config
 gtk/         gtk-3.0 / gtk-4.0 settings.ini
 nwg-dock-hyprland/  style.css
 wallpapers/  gradient.png
+vscode/      settings.json, code-flags.conf
 scripts/     Hilfsskripte
 ```
 

@@ -1,0 +1,68 @@
+{
+    "layer": "top",
+    "position": "top",
+    "height": 28,
+    "spacing": 4,
+    "margin-top": 0,
+    "modules-left": ["custom/menu", "hyprland/workspaces", "hyprland/window"],
+    "modules-center": [],
+    "modules-right": ["tray", "network", "pulseaudio", "cpu", "battery", "clock"],
+
+    "custom/menu": {
+        "format": "",
+        "tooltip": false,
+        "on-click": "~/.local/share/gentoo-rice/scripts/powermenu.sh"
+    },
+    "hyprland/workspaces": {
+        "format": "{id}",
+        "on-click": "activate",
+        "persistent-workspaces": { "*": 5 },
+        "sort-by-number": true
+    },
+    "hyprland/window": {
+        "format": "{class}",
+        "max-length": 32,
+        "separate-outputs": true,
+        "rewrite": { "": "Schreibtisch" }
+    },
+    "tray": { "icon-size": 15, "spacing": 10 },
+    "network": {
+        "format-wifi": "",
+        "format-ethernet": "",
+        "format-disconnected": "",
+        "tooltip-format-wifi": "{essid} ({signalStrength}%)",
+        "tooltip-format-ethernet": "{ifname}: {ipaddr}",
+        "tooltip-format-disconnected": "Nicht verbunden",
+        "on-click": "kitty -e nmtui"
+    },
+    "pulseaudio": {
+        "format": "{icon}",
+        "format-muted": "",
+        "format-icons": { "default": ["", "", ""] },
+        "tooltip-format": "Lautstärke {volume}%",
+        "scroll-step": 5,
+        "on-click": "pavucontrol",
+        "on-click-right": "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"
+    },
+    "cpu": {
+        "interval": 3,
+        "format": "  {usage}%",
+        "tooltip": false
+    },
+    "battery": {
+        "states": { "warning": 25, "critical": 12 },
+        "format": "{icon}  {capacity}%",
+        "format-charging": "  {capacity}%",
+        "format-icons": ["", "", "", "", ""]
+    },
+    "clock": {
+        "locale": "de_DE.UTF-8",
+        "interval": 10,
+        "format": "{:%a %-d. %b %H:%M}",
+        "tooltip-format": "<tt>{calendar}</tt>",
+        "calendar": {
+            "mode": "month",
+            "format": { "today": "<span color='#0A84FF'><b>{}</b></span>" }
+        }
+    }
+}

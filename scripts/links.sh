@@ -1,4 +1,4 @@
-# shellcheck shell=bash
+# shellcheck shell=bash disable=SC2034  # Variablen werden von install.sh/uninstall.sh genutzt
 # Gemeinsame Definitionen für install.sh / uninstall.sh
 # Format: "Quelle im Repo|Ziel relativ zu \$HOME"
 LINKS=(

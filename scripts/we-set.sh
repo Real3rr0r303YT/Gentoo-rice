@@ -67,7 +67,7 @@ set_we() {
     echo "$pid" > "$WE_STATE/we.pid"
     sleep 3
     if ! kill -0 "$pid" 2>/dev/null; then
-        fail "linux-wallpaperengine konnte „${WE_TITLE:-$dir}“ nicht starten (Log: ${LOG/#$HOME/\~})" "$WE_PREVIEW"
+        fail "linux-wallpaperengine konnte '${WE_TITLE:-$dir}' nicht starten (Log: ${LOG/#$HOME/\~})" "$WE_PREVIEW"
     fi
 
     if [[ ${WE_PAUSE_ON_FULLSCREEN:-1} == 1 ]]; then

@@ -72,9 +72,13 @@ reload_all() {
     if pgrep -x mako >/dev/null; then makoctl reload 2>/dev/null || true
     else (mako -c "$WAL/mako-config" >/dev/null 2>&1 &); fi
     pkill -USR1 -x cava 2>/dev/null || true
-    [[ -f $WAL/colors-kitty.conf ]] && for s in /tmp/kitty-*; do
-        [[ -S $s ]] && kitty @ --to "unix:$s" set-colors -a -c "$WAL/colors-kitty.conf" >/dev/null 2>&1 || true
-    done
+    if [[ -f $WAL/colors-kitty.conf ]]; then
+        for s in /tmp/kitty-*; do
+            [[ -S $s ]] || continue
+            kitty @ --to "unix:$s" set-colors -a -c "$WAL/colors-kitty.conf" >/dev/null 2>&1 || true
+        done
+    fi
+    return 0
 }
 
 img_backend() {
@@ -83,10 +87,10 @@ img_backend() {
     return 1
 }
 ensure_daemon() {
-    local b=$1 i
+    local b=$1
     "$b" query >/dev/null 2>&1 && return 0
     ("$b-daemon" >/dev/null 2>&1 &)
-    for i in $(seq 20); do "$b" query >/dev/null 2>&1 && return 0; sleep 0.1; done
+    for _ in $(seq 20); do "$b" query >/dev/null 2>&1 && return 0; sleep 0.1; done
 }
 
 show() { # Wallpaper anzeigen (nur in einer laufenden Sitzung)
@@ -121,7 +125,7 @@ set_wall() { # set_wall <datei> [quiet]
 default_wall() {
     local f
     f=$(list_walls | head -n1)
-    [[ -n $f ]] || f=$(ls "$REPO"/wallpapers/*.jpg 2>/dev/null | head -n1)
+    [[ -n $f ]] || f=$(find "$REPO/wallpapers" -maxdepth 1 -name '*.jpg' 2>/dev/null | sort | head -n1)
     echo "$f"
 }
 

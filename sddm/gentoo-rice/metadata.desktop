@@ -1,0 +1,14 @@
+[SddmGreeterTheme]
+Name=Gentoo-rice
+Description=Login im Stil des Gentoo-rice: unscharfes Wallpaper, Farben aus der dynamischen Palette
+Author=3rr0r303YT
+Copyright=(c) 2026 3rr0r303YT
+License=GPL-3.0-or-later
+Type=sddm-theme
+Version=1.0
+Website=https://github.com/Real3rr0r303YT/Gentoo-rice
+MainScript=Main.qml
+ConfigFile=theme.conf
+Theme-Id=gentoo-rice
+Theme-API=2.0
+QtVersion=6

@@ -22,6 +22,7 @@ Wallpaper-driven **anime / lofi** Hyprland rice for **Gentoo (OpenRC)** – ever
 - **Wallpaper Engine** live wallpapers from Steam (optional, `./install.sh --we`)
 - **Terminal toys** as floating windows: cava, btop, cmatrix, tty-clock, fastfetch (Gentoo logo), lyrics overlay (sptlrx)
 - **hyprlock** in the same dynamic colors, shows the current song
+- **Login screen** (optional, `--login`): SDDM in the rice look or a blocky style, hyprlock to match
 - **Claude Code** installed by default via the official native installer (`Super + K` opens it in a terminal)
 - **Firefox**, rofi launcher, mako notifications, Papirus icons
 - **Clean cursor:** Bibata via hyprcursor (sharp at any scale), hides while typing and after 5 s idle, flat mouse acceleration, two-finger right click, smoother touchpad scrolling
@@ -37,6 +38,7 @@ git clone https://github.com/Real3rr0r303YT/Gentoo-rice && cd Gentoo-rice && ./i
 ```sh
 ./install.sh --dry-run   # only show what would be installed/changed (no sudo, no changes)
 ./install.sh --no-claude # without Claude Code
+./install.sh --login     # with graphical login screen (SDDM)
 ```
 
 Run as a normal user – `sudo`/`doas` is only used for system steps.
@@ -103,6 +105,46 @@ Installs the build dependencies via emerge, clones the repo with submodules to `
 - User properties from the Wallpaper Engine UI are not applied automatically
 - Pausing stops the process (SIGSTOP) – the last frame stays visible
 - No wallpapers or Workshop content are shipped with this repo
+
+## Login screen (optional)
+
+Graphical login with **SDDM** in Wayland mode (greeter runs in Weston, German keyboard) instead of logging in on TTY1:
+
+```sh
+./install.sh --login              # rice + login screen (theme gentoo-rice)
+./install.sh --login=minecraft    # blocky look
+./scripts/login-screen.sh --theme gentoo-rice   # login screen only
+```
+
+| `gentoo-rice` | `gentoo-rice-blocks` |
+|---|---|
+| ![Login gentoo-rice](screenshots/login-gentoo-rice.jpg) | ![Login blocks](screenshots/login-blocks.jpg) |
+
+| Theme | Look |
+|---|---|
+| `gentoo-rice` | blurred current wallpaper, colors from the palette (pywal16 or active theme), big clock + date, round avatar, glass password field, session picker (Hyprland preselected), reboot/power off |
+| `gentoo-rice-blocks` (`--login=minecraft`) | pixel font, stone/dirt textures, blocky buttons – all graphics self-made (`tools/gen-pixel-textures.py`), no third-party textures, logos or fonts |
+
+- **Avatar:** save a picture as `~/.face` (otherwise a placeholder with your initial), then run `scripts/sddm-sync.sh`
+- Wallpaper, colors and avatar are copied to `/var/lib/gentoo-rice/sddm/` on every wallpaper/theme change; **hyprlock** uses the same style and avatar
+- Session "Hyprland (Gentoo-rice)" starts Hyprland with a dbus session bus (OpenRC)
+- The TTY1 autostart is removed so Hyprland does not start twice
+- OpenRC: `gui-libs/display-manager-init`, `DISPLAYMANAGER="sddm"` in `/etc/conf.d/display-manager`, `display-manager` in runlevel `default`
+- Without Weston, SDDM falls back to X11
+- Every changed system file is backed up (`/var/lib/gentoo-rice/backup/`)
+
+**Undo:** `./scripts/login-screen-uninstall.sh` – removes `display-manager` from the runlevel, restores all files and brings back the TTY1 autostart.
+
+### Emergency exit
+
+If the login screen does not start (black screen, crash):
+
+1. Press `Ctrl + Alt + F2` → log in on the text console
+2. `sudo rc-update del display-manager default`
+3. `sudo reboot` → login on TTY1 again
+4. Afterwards: `./scripts/login-screen-uninstall.sh`
+
+Tip: preview a login theme without rebooting: `pip install PySide6-Essentials` and `QT_QPA_PLATFORM=offscreen python3 tools/sddm-preview.py sddm/gentoo-rice preview.png`
 
 ## Themes
 
@@ -232,10 +274,13 @@ themes/      theme presets (theme.conf)
 fastfetch/   config.jsonc
 firefox/     user.js, userChrome.css, policies.json
 gtk/         gtk-3.0 / gtk-4.0 settings.ini
+sddm/        login themes gentoo-rice and gentoo-rice-blocks (QML)
 vscode/      settings.json, code-flags.conf
 wallpapers/  3 generated gradient placeholders
 config/      wallpaperengine.conf (template)
-scripts/     wallpaper.sh, wallpaper-picker.sh, theme.sh, theme-picker.sh, we-set.sh, install-claude-code.sh, …
+scripts/     wallpaper.sh, theme.sh, login-screen.sh, sddm-sync.sh, we-set.sh, install-claude-code.sh, …
+tools/       sddm-preview.py, gen-pixel-textures.py
+.github/     CI: ShellCheck, JSON, Lua, qmllint + render test of the SDDM themes
 ```
 
 ## Support

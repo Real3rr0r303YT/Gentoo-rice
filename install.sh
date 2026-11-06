@@ -6,23 +6,25 @@ set -Eeuo pipefail
 
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-DEV=0 WE=0 DRY_RUN=0
+DEV=0 WE=0 DRY_RUN=0 CLAUDE=1
 for arg in "$@"; do
     case $arg in
         --dev)     DEV=1 ;;
         --we)      WE=1 ;;
         --dry-run) DRY_RUN=1 ;;
+        --no-claude) CLAUDE=0 ;;
         -h|--help)
-            printf 'Nutzung: ./install.sh [--dev] [--we] [--dry-run]\n'
+            printf 'Nutzung: ./install.sh [--dev] [--we] [--no-claude] [--dry-run]\n'
             printf '  --dev      zusätzlich Entwickler-Setup (scripts/dev-setup.sh)\n'
             printf '  --we       zusätzlich Wallpaper Engine (scripts/wallpaperengine.sh)\n'
+            printf '  --no-claude  Claude Code nicht installieren\n'
             printf '  --dry-run  nur anzeigen, was installiert/geändert würde (keine Änderungen)\n'
             exit 0 ;;
         *) printf 'Unbekannte Option: %s (siehe --help)\n' "$arg" >&2; exit 1 ;;
     esac
 done
 
-TOTAL=$((14 + DEV + WE))
+TOTAL=$((14 + CLAUDE + DEV + WE))
 KW_FILE=/etc/portage/package.accept_keywords/gentoo-rice-auto
 # shellcheck source=scripts/links.sh
 source "$REPO/scripts/links.sh"
@@ -172,7 +174,10 @@ dry_run() {
     info "Firefox-Policies nach /etc/firefox/policies (+ /opt/firefox/distribution), Standardbrowser"
     info "Dienste: elogind (boot), dbus (default), bluetooth (default, falls bluez)"
     info "Flatpak: Flathub (user), com.valvesoftware.Steam, MangoHud-Vulkan-Layer"
+    info "Proton/.exe: ${PROTON_FLATPAKS[*]}; .exe-Dateien öffnen mit Bottles"
+    info "Themes: Standard lofi (Farben aus dem Wallpaper), Wechsel mit Super+Shift+T"
     info "Autostart: Hyprland auf TTY1 (~/.bash_profile), fastfetch in kitty (~/.bashrc)"
+    if ((CLAUDE)); then info "Claude Code: nativer Installer (claude.ai/install.sh), PATH in ~/.bashrc, Super+K"; fi
     if ((DEV)); then info "Dev-Setup: scripts/dev-setup.sh"; fi
     if ((WE)); then info "Wallpaper Engine: scripts/wallpaperengine.sh"; fi
 
@@ -262,21 +267,21 @@ DONE+=("Fonts JetBrains Mono, Font Awesome, Noto CJK")
 step "Themes: Adwaita-dark, Papirus-Dark, Bibata-Cursor"
 if [[ -d /usr/share/icons/Papirus-Dark || -d $HOME/.local/share/icons/Papirus-Dark ]]; then ok "Icons: Papirus-Dark"
 else warn "Papirus-Dark nicht installiert (x11-themes/papirus-icon-theme)"; fi
-if [[ ! -d $HOME/.local/share/icons/Bibata-Modern-Classic ]]; then
+# Bibata-Mauszeiger: Ice (weiß), Classic (schwarz), Amber – je nach Theme
+mkdir -p "$HOME/.local/share/icons"
+for cur in Bibata-Modern-Ice Bibata-Modern-Classic Bibata-Modern-Amber; do
+    if [[ -d $HOME/.local/share/icons/$cur/cursors ]]; then ok "Cursor: $cur"; continue; fi
     tmp=$(mktemp -d)
-    if curl -fsSL -o "$tmp/b.tar.xz" https://github.com/ful1e5/Bibata_Cursor/releases/latest/download/Bibata-Modern-Classic.tar.xz \
-        && mkdir -p "$HOME/.local/share/icons" && tar -xJf "$tmp/b.tar.xz" -C "$HOME/.local/share/icons"; then
-        ok "Cursor: Bibata-Modern-Classic"
+    if curl -fsSL -o "$tmp/c.tar.xz" "https://github.com/ful1e5/Bibata_Cursor/releases/latest/download/$cur.tar.xz" \
+        && tar -xJf "$tmp/c.tar.xz" -C "$HOME/.local/share/icons"; then
+        ok "Cursor: $cur"
     else
-        warn "Bibata-Cursor konnte nicht geladen werden – Standard-Cursor bleibt"; SKIPPED+=("Bibata-Cursor (Download)")
+        warn "$cur konnte nicht geladen werden"; SKIPPED+=("$cur (Download)")
     fi
     rm -rf "$tmp"
-else
-    ok "Cursor: Bibata-Modern-Classic"
-fi
-mkdir -p "$HOME/.icons/default"
-printf '[Icon Theme]\nInherits=Bibata-Modern-Classic\n' > "$HOME/.icons/default/index.theme"
-DONE+=("Themes: Adwaita-dark, Papirus-Dark, Bibata")
+done
+"$REPO/scripts/cursor.sh" Bibata-Modern-Ice 24 >/dev/null || warn "Standard-Cursor bleibt"
+DONE+=("Themes: Adwaita-dark, Papirus-Dark, Bibata-Cursor (Ice/Classic/Amber)")
 
 # ── 7. Configs verlinken ───────────────────────────────────
 step "Configs sichern & verlinken"
@@ -306,6 +311,10 @@ for entry in "${LINKS[@]}"; do
     link_one "$src" "${entry#*|}"
 done
 # Links im Repo auf die generierten Farben (gitignored)
+# GTK-Farben des aktiven Themes (wal/templates/gtk-colors.css)
+for entry in "${CACHE_LINKS[@]}"; do
+    link_one "$HOME/${entry%%|*}" "${entry#*|}"
+done
 for entry in "${GENERATED_LINKS[@]}"; do
     ln -sfn "$HOME/${entry#*|}" "$REPO/${entry%%|*}"
 done
@@ -314,7 +323,6 @@ done
 xdg-user-dirs-update >/dev/null 2>&1 || true
 gsettings set org.gnome.desktop.interface gtk-theme 'Adwaita-dark'          2>/dev/null || true
 gsettings set org.gnome.desktop.interface icon-theme 'Papirus-Dark'         2>/dev/null || true
-gsettings set org.gnome.desktop.interface cursor-theme 'Bibata-Modern-Classic' 2>/dev/null || true
 gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark'        2>/dev/null || true
 gsettings set org.gnome.desktop.interface font-name 'JetBrains Mono 10'     2>/dev/null || true
 gsettings set org.gnome.desktop.interface monospace-font-name 'JetBrains Mono 11' 2>/dev/null || true
@@ -512,8 +520,39 @@ else
         flatpak override --user --filesystem=xdg-config/MangoHud:ro --talk-name=com.feralinteractive.GameMode \
             com.valvesoftware.Steam || warn "flatpak override fehlgeschlagen"
     fi
+
+    # Proton & .exe-Spiele: Proton-GE für Steam, ProtonUp-Qt, Bottles
+    for app in "${PROTON_FLATPAKS[@]}"; do
+        if flatpak info --user "$app" >/dev/null 2>&1; then ok "$app vorhanden"
+        elif flatpak install --user -y --noninteractive flathub "$app"; then ok "$app installiert"
+        else warn "$app nicht installiert"; FAILED+=("$app (Flatpak)"); fi
+    done
+    # .exe-Dateien per Doppelklick mit Bottles öffnen
+    if flatpak info --user com.usebottles.bottles >/dev/null 2>&1; then
+        if xdg-mime default com.usebottles.bottles.desktop application/x-ms-dos-executable \
+            application/x-msdownload application/vnd.microsoft.portable-executable application/x-msi 2>/dev/null; then
+            ok ".exe/.msi → Bottles"
+        else
+            warn "xdg-mime für .exe fehlgeschlagen"
+        fi
+        # Bottles darf Spiele aus dem Home-Ordner und von weiteren Laufwerken starten
+        flatpak override --user --filesystem=home --filesystem=/run/media com.usebottles.bottles || true
+    fi
 fi
-DONE+=("gamemode, mangohud, Flatpak + Flathub, Steam")
+DONE+=("gamemode, mangohud, Flatpak + Flathub, Steam, Proton-GE, ProtonUp-Qt, Bottles")
+
+# ── Claude Code ────────────────────────────────────────────
+if [[ $CLAUDE -eq 1 ]]; then
+    step "Claude Code (nativer Installer)"
+    if out=$("$REPO/scripts/install-claude-code.sh" 2>&1); then
+        while IFS= read -r l; do info "$l"; done <<<"$out"
+        ok "Claude Code bereit – im Terminal: claude  ·  Taste: Super+K"
+        DONE+=("Claude Code ($(claude --version 2>/dev/null || echo installiert))")
+    else
+        printf '%s\n' "$out" >> "$LOG"
+        warn "Claude Code konnte nicht installiert werden"; FAILED+=("Claude Code (einzeln: ./scripts/install-claude-code.sh)")
+    fi
+fi
 
 # ── Wallpaper Engine (optional) ────────────────────────────
 if [[ $WE -eq 1 ]]; then

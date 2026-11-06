@@ -25,6 +25,17 @@ if ok and type(wal) == "table" then
     for k, v in pairs(wal) do c[k] = v end
 end
 
+-- Optik des aktiven Themes (scripts/theme.sh → ~/.cache/rice/theme-hypr.lua)
+local look = {
+    gaps_in = 5, gaps_out = 10, rounding = 10, border_size = 2,
+    active_opacity = 0.85, inactive_opacity = 0.75, blur_size = 12, blur_passes = 4,
+    cursor = "Bibata-Modern-Ice", cursor_size = 24,
+}
+local ok_look, theme_look = pcall(dofile, home .. "/.cache/rice/theme-hypr.lua")
+if ok_look and type(theme_look) == "table" then
+    for k, v in pairs(theme_look) do look[k] = v end
+end
+
 ---------------------
 ---- PROGRAMME ------
 ---------------------
@@ -54,9 +65,10 @@ hl.monitor({
 hl.env("XDG_CURRENT_DESKTOP", "Hyprland")
 hl.env("XDG_SESSION_TYPE", "wayland")
 hl.env("XDG_SESSION_DESKTOP", "Hyprland")
-hl.env("XCURSOR_THEME", "Bibata-Modern-Classic")
-hl.env("XCURSOR_SIZE", "24")
-hl.env("HYPRCURSOR_SIZE", "24")
+hl.env("XCURSOR_THEME", look.cursor)
+hl.env("XCURSOR_SIZE", tostring(look.cursor_size))
+hl.env("HYPRCURSOR_THEME", look.cursor)
+hl.env("HYPRCURSOR_SIZE", tostring(look.cursor_size))
 hl.env("QT_QPA_PLATFORM", "wayland;xcb")
 hl.env("QT_WAYLAND_DISABLE_WINDOWDECORATION", "1")
 hl.env("MOZ_ENABLE_WAYLAND", "1")
@@ -69,7 +81,7 @@ hl.env("ELECTRON_OZONE_PLATFORM_HINT", "auto")
 hl.on("hyprland.start", function()
     hl.exec_cmd("dbus-update-activation-environment WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE HYPRLAND_INSTANCE_SIGNATURE")
     hl.exec_cmd("gentoo-pipewire-launcher restart")
-    hl.exec_cmd("hyprctl setcursor Bibata-Modern-Classic 24")
+    hl.exec_cmd(scripts .. "/cursor.sh " .. look.cursor .. " " .. look.cursor_size)
     hl.exec_cmd(scripts .. "/wallpaper.sh restore")
     hl.exec_cmd("waybar")
     hl.exec_cmd("mako -c " .. home .. "/.cache/wal/mako-config")
@@ -83,9 +95,9 @@ end)
 
 hl.config({
     general = {
-        gaps_in          = 5,
-        gaps_out         = 10,
-        border_size      = 2,
+        gaps_in          = look.gaps_in,
+        gaps_out         = look.gaps_out,
+        border_size      = look.border_size,
         col = {
             active_border   = { colors = { c.accent, c.accent2 }, angle = 45 },
             inactive_border = c.muted,
@@ -96,15 +108,15 @@ hl.config({
     },
 
     decoration = {
-        rounding           = 10,
-        active_opacity     = 0.85,
-        inactive_opacity   = 0.75,
+        rounding           = look.rounding,
+        active_opacity     = look.active_opacity,
+        inactive_opacity   = look.inactive_opacity,
         fullscreen_opacity = 1.0,
 
         blur = {
             enabled           = true,
-            size              = 12,
-            passes            = 4,
+            size              = look.blur_size,
+            passes            = look.blur_passes,
             new_optimizations = true,
             ignore_opacity    = true,
             noise             = 0.02,
@@ -138,14 +150,27 @@ hl.config({
     },
 
     input = {
-        kb_layout    = "de",
-        follow_mouse = 1,
-        sensitivity  = 0,
+        kb_layout     = "de",
+        follow_mouse  = 1,
+        mouse_refocus = false,     -- Fokus springt nicht beim bloßen Drüberfahren über Lücken
+        sensitivity   = 0,
+        accel_profile = "flat",    -- lineare Bewegung, kein "Schwimmen" (Gaming-freundlich)
+        scroll_factor = 1.0,
         touchpad = {
-            natural_scroll         = true,
-            tap_to_click           = true,
-            disable_while_typing   = true,
+            natural_scroll       = true,
+            tap_to_click         = true,
+            disable_while_typing = true,
+            clickfinger_behavior = true,   -- 2 Finger = Rechtsklick, 3 Finger = Mittelklick
+            scroll_factor        = 0.6,    -- sanfteres Scrollen
         },
+    },
+
+    cursor = {
+        enable_hyprcursor    = true,   -- gestochen scharf bei jeder Skalierung
+        sync_gsettings_theme = true,   -- gleicher Zeiger in GTK-Apps
+        inactive_timeout     = 5,      -- nach 5 s ohne Bewegung ausblenden
+        hide_on_key_press    = true,   -- beim Tippen ausblenden
+        no_warps             = true,   -- Zeiger springt nicht bei Fokuswechsel per Tastatur
     },
 
     ecosystem = {
@@ -252,6 +277,7 @@ hl.bind(mod .. " + B",           exec(browser))
 hl.bind(mod .. " + G",           exec(steam))
 hl.bind(mod .. " + W",           exec(scripts .. "/wallpaper-picker.sh"))
 hl.bind(mod .. " + SHIFT + W",   exec(scripts .. "/wallpaper.sh random"))
+hl.bind(mod .. " + SHIFT + T",   exec(scripts .. "/theme-picker.sh"))
 hl.bind(mod .. " + Q",           hl.dsp.window.close())
 hl.bind(mod .. " + F",           hl.dsp.window.fullscreen())
 hl.bind(mod .. " + V",           hl.dsp.window.float({ action = "toggle" }))
@@ -268,6 +294,9 @@ hl.bind(mod .. " + M", exec(float .. " -o initial_window_width=110c -o initial_w
 hl.bind(mod .. " + C", exec(float .. " -o initial_window_width=70c -o initial_window_height=12c tty-clock -cbs -C 4"))
 hl.bind(mod .. " + I", exec(float .. " -o initial_window_width=90c -o initial_window_height=24c --hold sh -c 'GENTOO_RICE_FASTFETCH=1 fastfetch'"))
 hl.bind(mod .. " + Y", exec(scripts .. "/lyrics.sh"))
+
+-- Claude Code im Terminal (Shell bleibt danach offen)
+hl.bind(mod .. " + K", exec("kitty --class claude-code sh -c 'cd ~ && claude; exec bash'"))
 
 -- Screenshots
 hl.bind("Print",         exec(scripts .. "/screenshot.sh area"))

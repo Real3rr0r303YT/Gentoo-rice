@@ -30,6 +30,12 @@ for rel in "${RELS[@]}"; do
 done
 rm -f "$REPO/hypr/version.conf" 2>/dev/null || true
 for entry in "${GENERATED_LINKS[@]}"; do rm -f "$REPO/${entry%%|*}"; done
+# GTK-Farben-Links (zeigen in den Cache) entfernen; Backups folgen unten
+for entry in "${CACHE_LINKS[@]}"; do
+    dst="$HOME/${entry#*|}"
+    if [[ -L $dst && "$(readlink "$dst")" == "$HOME/${entry%%|*}" ]]; then rm "$dst"; ok "entfernt: ~/${entry#*|}"; fi
+    RELS+=("${entry#*|}")
+done
 
 printf '%sBackup zurückspielen%s\n' "$B" "$N"
 if [[ -d $BACKUP_ROOT ]]; then
@@ -106,8 +112,8 @@ rmdir "$WALLPAPER_DIR" 2>/dev/null || true
 rm -rf "$HOME/.cache/rice" && ok "$HOME/.cache/rice (Thumbnails) entfernt"
 [[ -f $HOME/.config/btop/btop.conf ]] && sed -i 's/^color_theme *=.*/color_theme = "Default"/' "$HOME/.config/btop/btop.conf" || true
 
-if [[ -f $HOME/.icons/default/index.theme ]] && grep -qE 'WhiteSur-cursors|Bibata-Modern-Classic' "$HOME/.icons/default/index.theme"; then
+if [[ -f $HOME/.icons/default/index.theme ]] && grep -qE 'WhiteSur-cursors|Bibata-Modern' "$HOME/.icons/default/index.theme"; then
     rm "$HOME/.icons/default/index.theme"; ok "Cursor-Default entfernt"
 fi
 
-printf '\n%sFertig.%s Pakete, Steam, Workshop-Wallpaper, pywal16 (~/.cache/wal), Themes, eigene Wallpaper, Standardbrowser und /etc/portage/*/gentoo-rice bleiben erhalten.\n' "$G$B" "$N"
+printf '\n%sFertig.%s Pakete, Steam, Proton/Bottles, Workshop-Wallpaper, pywal16 (~/.cache/wal), Themes, eigene Wallpaper, Standardbrowser und /etc/portage/*/gentoo-rice bleiben erhalten.\n' "$G$B" "$N"

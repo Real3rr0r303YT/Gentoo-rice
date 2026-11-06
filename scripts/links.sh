@@ -19,6 +19,17 @@ GENERATED_LINKS=(
     "waybar/colors.css|.cache/wal/colors-waybar.css"
     "kitty/colors-wal.conf|.cache/wal/colors-kitty.conf"
 )
+# Links auf generierte Dateien im Cache: "Ziel unter \$HOME|Link relativ zu \$HOME"
+CACHE_LINKS=(
+    ".cache/wal/gtk-colors.css|.config/gtk-3.0/gtk.css"
+    ".cache/wal/gtk-colors.css|.config/gtk-4.0/gtk.css"
+)
+# Flatpaks für .exe-Spiele / Proton
+PROTON_FLATPAKS=(
+    com.valvesoftware.Steam.CompatibilityTool.Proton-GE
+    net.davidotek.pupgui2
+    com.usebottles.bottles
+)
 WALLPAPER_DIR="$HOME/Pictures/wallpapers"
 BACKUP_ROOT="$HOME/.config-backup/gentoo-rice"
 PROFILE_BEGIN="# >>> gentoo-rice >>>"

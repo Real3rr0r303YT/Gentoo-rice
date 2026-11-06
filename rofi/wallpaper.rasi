@@ -1,5 +1,5 @@
 /* Gentoo-rice – Wallpaper-Picker (horizontale Leiste unten) */
-configuration { show-icons: true; hover-select: true; me-select-entry: ""; me-accept-entry: "MousePrimary"; }
+configuration { show-icons: true; hover-select: true; }
 
 @import "~/.cache/wal/colors-rice.rasi"
 

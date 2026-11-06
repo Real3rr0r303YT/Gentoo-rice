@@ -52,19 +52,8 @@ fi
 
 # ── 4. Claude Code ─────────────────────────────────────────
 step "Claude Code (nativer Installer)"
-if [[ -x $HOME/.local/bin/claude ]] || command -v claude >/dev/null; then
-    ok "Claude Code bereits installiert (aktualisiert sich selbst)"
-else
-    command -v curl >/dev/null || die "curl fehlt – Claude Code kann nicht geladen werden."
-    curl -fsSL https://claude.ai/install.sh | bash || die "Claude-Code-Installer fehlgeschlagen."
-fi
-if ! grep -qE '\.local/bin' "$HOME/.bashrc" 2>/dev/null || grep -qF '# >>> gentoo-rice path >>>' "$HOME/.bashrc"; then
-    # shellcheck disable=SC2016  # $PATH/$HOME sollen erst in ~/.bashrc expandieren
-    bashrc_block path 'case ":$PATH:" in *":$HOME/.local/bin:"*) ;; *) export PATH="$HOME/.local/bin:$PATH" ;; esac'
-    info "PATH in ~/.bashrc ergänzt"
-fi
+"$REPO/scripts/install-claude-code.sh" || die "Claude Code konnte nicht installiert werden (Details oben)."
 hash -r
-claude --version >/dev/null 2>&1 || die "\"claude --version\" schlägt fehl – Installation prüfen (~/.local/bin/claude)."
 ok "claude $(claude --version 2>/dev/null)"
 
 # ── 5. VS Code ─────────────────────────────────────────────

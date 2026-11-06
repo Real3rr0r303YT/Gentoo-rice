@@ -51,7 +51,7 @@ tooltip label { color: @fg; padding: 2px 4px; }
 #workspaces button.urgent { background: @c1; }
 
 /* Rechts */
-#cpu, #memory, #pulseaudio, #network, #bluetooth, #battery, #clock, #custom-power {
+#cpu, #memory, #pulseaudio, #network, #bluetooth, #battery, #clock, #custom-theme, #custom-power {
     padding: 0 8px;
     color: @fg;
 }
@@ -63,4 +63,6 @@ tooltip label { color: @fg; padding: 2px 4px; }
 #battery.warning:not(.charging) { color: @c3; }
 #battery.critical:not(.charging) { color: @c1; }
 #clock { font-weight: 800; }
+#custom-theme { color: @accent2; }
+#custom-theme:hover { color: @accent; }
 #custom-power { color: @c1; padding-right: 10px; }

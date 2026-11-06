@@ -33,31 +33,54 @@ still() {
     fi
 }
 
-# Fallback ohne pywal16: Templates mit festem Schema rendern
-fallback_colors() {
-    python3 - "$REPO/wal/templates" "$WAL" <<'PY'
+# Templates mit einer festen Palette rendern
+# render_palette <background> <foreground> <color0> … <color15>
+render_palette() {
+    python3 - "$REPO/wal/templates" "$WAL" "$@" <<'PY'
 import os, sys
-src, dst = sys.argv[1], sys.argv[2]
+src, dst, bg, fg, *pal = sys.argv[1:]
 class C(str):
     @property
     def strip(self): return self.lstrip('#')
     @property
     def rgb(self):
         h = self.lstrip('#'); return ','.join(str(int(h[i:i+2], 16)) for i in (0, 2, 4))
-pal = ['#16131f','#e0607e','#8fcf9b','#e6c384','#7aa2f7','#bb9af7','#7dcfff','#d8d4e6',
-       '#4a4458','#ec7f98','#a6dab0','#edd3a3','#97b6fa','#cbb2f9','#9adbff','#f2f0f8']
 d = {f'color{i}': C(c) for i, c in enumerate(pal)}
-d.update(background=C(pal[0]), foreground=C(pal[15]), cursor=C(pal[15]), wallpaper='')
+d.update(background=C(bg), foreground=C(fg), cursor=C(fg), wallpaper='')
 for n in os.listdir(src):
     with open(os.path.join(src, n)) as f: t = f.read()
     with open(os.path.join(dst, n), 'w') as f: f.write(t.format(**d))
 kitty = ''.join(f'color{i} {c}\n' for i, c in enumerate(pal))
 with open(os.path.join(dst, 'colors-kitty.conf'), 'w') as f:
-    f.write(f'foreground {pal[15]}\nbackground {pal[0]}\ncursor {pal[15]}\n' + kitty)
+    f.write(f'foreground {fg}\nbackground {bg}\ncursor {fg}\nselection_background {pal[4]}\nselection_foreground {bg}\n' + kitty)
 PY
 }
 
+# Fallback ohne pywal16: festes Lofi-Schema
+fallback_colors() {
+    render_palette '#16131f' '#f2f0f8' \
+        '#16131f' '#e0607e' '#8fcf9b' '#e6c384' '#7aa2f7' '#bb9af7' '#7dcfff' '#d8d4e6' \
+        '#4a4458' '#ec7f98' '#a6dab0' '#edd3a3' '#97b6fa' '#cbb2f9' '#9adbff' '#f2f0f8'
+}
+
+# Aktives Theme mit fester Palette? (scripts/theme.sh) → dessen Farben statt pywal
+theme_colors() {
+    local name file
+    name=$(cat "$STATE/theme" 2>/dev/null) || return 1
+    file="$REPO/themes/$name/theme.conf"
+    [[ -f $file ]] || return 1
+    (
+        # shellcheck source=/dev/null
+        source "$file"
+        [[ ${MODE:-dynamic} == static ]] || exit 1
+        read -ra P <<<"$PALETTE"
+        ((${#P[@]} == 16)) || exit 1
+        render_palette "$BG" "$FG" "${P[@]}"
+    )
+}
+
 gen_colors() { # gen_colors [--quiet-terminals]
+    theme_colors && return 0
     if command -v wal >/dev/null; then
         if [[ ${1:-} == --quiet-terminals ]]; then wal -q -n -s -t -e -i "$STATE/current.png" >/dev/null 2>&1 && return 0
         else wal -q -n -t -e -i "$STATE/current.png" >/dev/null 2>&1 && return 0; fi
@@ -130,7 +153,7 @@ default_wall() {
 }
 
 case "${1:-}" in
-    set)     [[ -n ${2:-} ]] || { echo "Nutzung: $0 set <datei>" >&2; exit 1; }; set_wall "$2" ;;
+    set)     [[ -n ${2:-} ]] || { echo "Nutzung: $0 set <datei> [quiet]" >&2; exit 1; }; set_wall "$2" "${3:-}" ;;
     random)  f=$(list_walls | shuf -n1); [[ -n $f ]] && set_wall "$f" ;;
     restore) if [[ $(cat "$STATE/mode" 2>/dev/null) == we ]] && [[ -f $STATE/we ]]; then
                  exec "$REPO/scripts/we-set.sh" restore
@@ -144,6 +167,8 @@ case "${1:-}" in
              printf '%s\n' "$(readlink -f "$f")" > "$STATE/wallpaper"
              still "$f" && gen_colors --quiet-terminals ;;
     colors)  gen_colors; reload_all ;;
+    restore-default)                   # erstes Wallpaper aus ~/Pictures/wallpapers (nach festem Theme)
+             f=$(default_wall); [[ -n $f ]] && set_wall "$f" quiet ;;
     colors-from)                       # Farben aus einem Bild, Wallpaper selbst unverändert
              [[ -f ${2:-} ]] || exit 1
              still "$2"; gen_colors; reload_all ;;

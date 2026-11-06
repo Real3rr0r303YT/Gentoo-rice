@@ -1,0 +1,91 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  lint:
+    name: Skripte, Configs & SDDM-Themes
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Werkzeuge installieren
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q shellcheck lua5.4 libegl1 libgl1 libxkbcommon0 libfontconfig1 libdbus-1-3
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Qt-Werkzeuge (qmllint, qmlformat) über PySide6
+        run: pip install --quiet "PySide6-Essentials==6.12.0"
+
+      - name: Bash-Syntax
+        run: for f in install.sh uninstall.sh scripts/*.sh; do bash -n "$f"; done
+
+      - name: ShellCheck
+        run: shellcheck -x -S style install.sh uninstall.sh scripts/*.sh
+
+      - name: JSON (Waybar, fastfetch, Firefox-Policies)
+        run: |
+          python3 - <<'PY'
+          import json, re, sys
+          for path in ["waybar/config.jsonc", "fastfetch/config.jsonc", "firefox/policies.json"]:
+              text = re.sub(r"^\s*//.*$", "", open(path, encoding="utf-8").read(), flags=re.M)
+              json.loads(text)
+              print("ok", path)
+          PY
+
+      - name: Lua-Syntax (Hyprland)
+        run: luac5.4 -p hypr/hyprland.lua
+
+      - name: pywal-Templates und Theme-Paletten
+        run: |
+          python3 - <<'PY'
+          import os
+          class C(str):
+              strip = property(lambda s: s.lstrip("#"))
+              rgb = property(lambda s: "0,0,0")
+          d = {f"color{i}": C("#112233") for i in range(16)}
+          d.update(background=C("#000000"), foreground=C("#ffffff"), cursor=C("#ffffff"), wallpaper="")
+          for n in sorted(os.listdir("wal/templates")):
+              open(os.path.join("wal/templates", n), encoding="utf-8").read().format(**d)
+              print("ok", n)
+          PY
+          for t in themes/*/theme.conf; do
+            ( . "$t"
+              if [ "$MODE" = static ]; then
+                n=$(echo "$PALETTE" | wc -w)
+                [ "$n" -eq 16 ] || { echo "::error file=$t::PALETTE hat $n statt 16 Farben"; exit 1; }
+              fi
+              echo "ok $t" )
+          done
+
+      - name: QML-Syntax (qmlformat)
+        run: for f in sddm/*/Main.qml; do pyside6-qmlformat "$f" > /dev/null && echo "ok $f"; done
+
+      - name: qmllint
+        # Die SDDM-Objekte (sddm, userModel, sessionModel, config, keyboard) stellt SDDM erst zur Laufzeit bereit
+        run: pyside6-qmllint --unqualified disable sddm/*/Main.qml
+
+      - name: SDDM-Themes rendern (Attrappen)
+        env:
+          QT_QPA_PLATFORM: offscreen
+          QT_QUICK_BACKEND: software
+        run: |
+          mkdir -p previews
+          for d in sddm/*/; do
+            t=$(basename "$d")
+            python3 tools/sddm-preview.py "$d" "previews/$t.png"
+          done
+
+      - name: Vorschaubilder hochladen
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sddm-previews
+          path: previews/
+          if-no-files-found: ignore

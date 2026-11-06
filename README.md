@@ -23,7 +23,8 @@ Wallpaper-driven **anime / lofi** Hyprland rice for **Gentoo (OpenRC)** – ever
 - **Terminal toys** as floating windows: cava, btop, cmatrix, tty-clock, fastfetch (Gentoo logo), lyrics overlay (sptlrx)
 - **hyprlock** in the same dynamic colors, shows the current song
 - **Claude Code** installed by default via the official native installer (`Super + K` opens it in a terminal)
-- **Firefox**, rofi launcher, mako notifications, Papirus icons, Bibata cursor
+- **Firefox**, rofi launcher, mako notifications, Papirus icons
+- **Clean cursor:** Bibata via hyprcursor (sharp at any scale), hides while typing and after 5 s idle, flat mouse acceleration, two-finger right click, smoother touchpad scrolling
 - **.exe games:** Proton-GE for Steam, ProtonUp-Qt, Bottles (`.exe` opens with a double click)
 - **Gaming:** Mesa/RADV for Radeon 780M, Vulkan tools, Flatpak + Flathub, Steam (Flatpak), gamemode, MangoHud (native + Flatpak layer); Steam and games without blur/transparency, games fullscreen with tearing for low latency
 
@@ -109,6 +110,7 @@ Installs the build dependencies via emerge, clones the repo with submodules to `
 
 - colors for Hyprland borders, Waybar, kitty, rofi, mako, cava, btop, fastfetch, hyprlock and **GTK 3/4 apps** (`~/.config/gtk-*/gtk.css`)
 - look: gaps, rounding, transparency, blur
+- mouse cursor: Bibata Ice (white), Classic (black) or Amber, matching the theme
 - light/dark mode for GTK/libadwaita
 - a generated gradient wallpaper in the theme colors
 

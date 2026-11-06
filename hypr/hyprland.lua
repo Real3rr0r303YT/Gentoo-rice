@@ -29,6 +29,7 @@ end
 local look = {
     gaps_in = 5, gaps_out = 10, rounding = 10, border_size = 2,
     active_opacity = 0.85, inactive_opacity = 0.75, blur_size = 12, blur_passes = 4,
+    cursor = "Bibata-Modern-Ice", cursor_size = 24,
 }
 local ok_look, theme_look = pcall(dofile, home .. "/.cache/rice/theme-hypr.lua")
 if ok_look and type(theme_look) == "table" then
@@ -64,9 +65,10 @@ hl.monitor({
 hl.env("XDG_CURRENT_DESKTOP", "Hyprland")
 hl.env("XDG_SESSION_TYPE", "wayland")
 hl.env("XDG_SESSION_DESKTOP", "Hyprland")
-hl.env("XCURSOR_THEME", "Bibata-Modern-Classic")
-hl.env("XCURSOR_SIZE", "24")
-hl.env("HYPRCURSOR_SIZE", "24")
+hl.env("XCURSOR_THEME", look.cursor)
+hl.env("XCURSOR_SIZE", tostring(look.cursor_size))
+hl.env("HYPRCURSOR_THEME", look.cursor)
+hl.env("HYPRCURSOR_SIZE", tostring(look.cursor_size))
 hl.env("QT_QPA_PLATFORM", "wayland;xcb")
 hl.env("QT_WAYLAND_DISABLE_WINDOWDECORATION", "1")
 hl.env("MOZ_ENABLE_WAYLAND", "1")
@@ -79,7 +81,7 @@ hl.env("ELECTRON_OZONE_PLATFORM_HINT", "auto")
 hl.on("hyprland.start", function()
     hl.exec_cmd("dbus-update-activation-environment WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE HYPRLAND_INSTANCE_SIGNATURE")
     hl.exec_cmd("gentoo-pipewire-launcher restart")
-    hl.exec_cmd("hyprctl setcursor Bibata-Modern-Classic 24")
+    hl.exec_cmd(scripts .. "/cursor.sh " .. look.cursor .. " " .. look.cursor_size)
     hl.exec_cmd(scripts .. "/wallpaper.sh restore")
     hl.exec_cmd("waybar")
     hl.exec_cmd("mako -c " .. home .. "/.cache/wal/mako-config")
@@ -148,14 +150,27 @@ hl.config({
     },
 
     input = {
-        kb_layout    = "de",
-        follow_mouse = 1,
-        sensitivity  = 0,
+        kb_layout     = "de",
+        follow_mouse  = 1,
+        mouse_refocus = false,     -- Fokus springt nicht beim bloßen Drüberfahren über Lücken
+        sensitivity   = 0,
+        accel_profile = "flat",    -- lineare Bewegung, kein "Schwimmen" (Gaming-freundlich)
+        scroll_factor = 1.0,
         touchpad = {
-            natural_scroll         = true,
-            tap_to_click           = true,
-            disable_while_typing   = true,
+            natural_scroll       = true,
+            tap_to_click         = true,
+            disable_while_typing = true,
+            clickfinger_behavior = true,   -- 2 Finger = Rechtsklick, 3 Finger = Mittelklick
+            scroll_factor        = 0.6,    -- sanfteres Scrollen
         },
+    },
+
+    cursor = {
+        enable_hyprcursor    = true,   -- gestochen scharf bei jeder Skalierung
+        sync_gsettings_theme = true,   -- gleicher Zeiger in GTK-Apps
+        inactive_timeout     = 5,      -- nach 5 s ohne Bewegung ausblenden
+        hide_on_key_press    = true,   -- beim Tippen ausblenden
+        no_warps             = true,   -- Zeiger springt nicht bei Fokuswechsel per Tastatur
     },
 
     ecosystem = {

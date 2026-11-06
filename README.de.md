@@ -23,7 +23,8 @@ Wallpaper-basiertes **Anime-/Lofi**-Hyprland-Rice für **Gentoo (OpenRC)** – a
 - **Terminal-Spielzeug** als schwebende Fenster: cava, btop, cmatrix, tty-clock, fastfetch (Gentoo-Logo), Songtext-Overlay (sptlrx)
 - **hyprlock** in denselben dynamischen Farben, zeigt den aktuellen Song
 - **Claude Code** standardmäßig über den offiziellen nativen Installer (`Super + K` öffnet es im Terminal)
-- **Firefox**, rofi-Launcher, mako-Benachrichtigungen, Papirus-Icons, Bibata-Cursor
+- **Firefox**, rofi-Launcher, mako-Benachrichtigungen, Papirus-Icons
+- **Sauberer Mauszeiger:** Bibata über hyprcursor (scharf bei jeder Skalierung), verschwindet beim Tippen und nach 5 s Inaktivität, lineare Mausbeschleunigung, Zwei-Finger-Rechtsklick, sanfteres Touchpad-Scrollen
 - **.exe-Spiele:** Proton-GE für Steam, ProtonUp-Qt, Bottles (`.exe` per Doppelklick)
 - **Gaming:** Mesa/RADV für Radeon 780M, Vulkan-Tools, Flatpak + Flathub, Steam (Flatpak), gamemode, MangoHud (nativ + Flatpak-Layer); Steam und Spiele ohne Blur/Transparenz, Spiele im Vollbild mit Tearing für niedrige Latenz
 
@@ -109,6 +110,7 @@ Installiert die Build-Abhängigkeiten per emerge, klont das Repo mit Submodulen 
 
 - Farben für Hyprland-Rahmen, Waybar, kitty, rofi, mako, cava, btop, fastfetch, hyprlock und **GTK-3/4-Apps** (`~/.config/gtk-*/gtk.css`)
 - Optik: Gaps, Rundung, Transparenz, Blur
+- Mauszeiger: Bibata Ice (weiß), Classic (schwarz) oder Amber, passend zum Theme
 - Hell/Dunkel für GTK/libadwaita
 - ein erzeugtes Verlaufs-Wallpaper in den Theme-Farben
 

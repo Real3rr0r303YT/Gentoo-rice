@@ -112,7 +112,7 @@ rmdir "$WALLPAPER_DIR" 2>/dev/null || true
 rm -rf "$HOME/.cache/rice" && ok "$HOME/.cache/rice (Thumbnails) entfernt"
 [[ -f $HOME/.config/btop/btop.conf ]] && sed -i 's/^color_theme *=.*/color_theme = "Default"/' "$HOME/.config/btop/btop.conf" || true
 
-if [[ -f $HOME/.icons/default/index.theme ]] && grep -qE 'WhiteSur-cursors|Bibata-Modern-Classic' "$HOME/.icons/default/index.theme"; then
+if [[ -f $HOME/.icons/default/index.theme ]] && grep -qE 'WhiteSur-cursors|Bibata-Modern' "$HOME/.icons/default/index.theme"; then
     rm "$HOME/.icons/default/index.theme"; ok "Cursor-Default entfernt"
 fi
 

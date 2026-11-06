@@ -19,6 +19,7 @@ load_theme() { # load_theme <name> → setzt die Variablen aus theme.conf
     # shellcheck disable=SC2034  # FG/NAME kommen aus theme.conf und sind dort dokumentiert
     MODE=dynamic SCHEME=dark BG="" FG="" PALETTE="" WALLPAPER=keep NAME=$1 DESC=""
     GAPS_IN=5 GAPS_OUT=10 ROUNDING=10 BORDER=2 ACTIVE_OPACITY=0.85 INACTIVE_OPACITY=0.75 BLUR_SIZE=12 BLUR_PASSES=4
+    CURSOR=Bibata-Modern-Ice CURSOR_SIZE=24
     # shellcheck source=/dev/null
     source "$file"
 }
@@ -58,6 +59,8 @@ return {
     inactive_opacity = $INACTIVE_OPACITY,
     blur_size        = $BLUR_SIZE,
     blur_passes      = $BLUR_PASSES,
+    cursor           = "$CURSOR",
+    cursor_size      = $CURSOR_SIZE,
 }
 LUA
 
@@ -71,6 +74,9 @@ LUA
             gsettings set org.gnome.desktop.interface gtk-theme Adwaita-dark 2>/dev/null || true
         fi
     fi
+
+    # Mauszeiger
+    "$REPO/scripts/cursor.sh" "$CURSOR" "$CURSOR_SIZE" >/dev/null || true
 
     # Wallpaper + Farben (wallpaper.sh rendert die Theme-Palette bzw. pywal)
     if [[ $MODE == static && $WALLPAPER == gradient ]]; then

@@ -267,21 +267,21 @@ DONE+=("Fonts JetBrains Mono, Font Awesome, Noto CJK")
 step "Themes: Adwaita-dark, Papirus-Dark, Bibata-Cursor"
 if [[ -d /usr/share/icons/Papirus-Dark || -d $HOME/.local/share/icons/Papirus-Dark ]]; then ok "Icons: Papirus-Dark"
 else warn "Papirus-Dark nicht installiert (x11-themes/papirus-icon-theme)"; fi
-if [[ ! -d $HOME/.local/share/icons/Bibata-Modern-Classic ]]; then
+# Bibata-Mauszeiger: Ice (weiß), Classic (schwarz), Amber – je nach Theme
+mkdir -p "$HOME/.local/share/icons"
+for cur in Bibata-Modern-Ice Bibata-Modern-Classic Bibata-Modern-Amber; do
+    if [[ -d $HOME/.local/share/icons/$cur/cursors ]]; then ok "Cursor: $cur"; continue; fi
     tmp=$(mktemp -d)
-    if curl -fsSL -o "$tmp/b.tar.xz" https://github.com/ful1e5/Bibata_Cursor/releases/latest/download/Bibata-Modern-Classic.tar.xz \
-        && mkdir -p "$HOME/.local/share/icons" && tar -xJf "$tmp/b.tar.xz" -C "$HOME/.local/share/icons"; then
-        ok "Cursor: Bibata-Modern-Classic"
+    if curl -fsSL -o "$tmp/c.tar.xz" "https://github.com/ful1e5/Bibata_Cursor/releases/latest/download/$cur.tar.xz" \
+        && tar -xJf "$tmp/c.tar.xz" -C "$HOME/.local/share/icons"; then
+        ok "Cursor: $cur"
     else
-        warn "Bibata-Cursor konnte nicht geladen werden – Standard-Cursor bleibt"; SKIPPED+=("Bibata-Cursor (Download)")
+        warn "$cur konnte nicht geladen werden"; SKIPPED+=("$cur (Download)")
     fi
     rm -rf "$tmp"
-else
-    ok "Cursor: Bibata-Modern-Classic"
-fi
-mkdir -p "$HOME/.icons/default"
-printf '[Icon Theme]\nInherits=Bibata-Modern-Classic\n' > "$HOME/.icons/default/index.theme"
-DONE+=("Themes: Adwaita-dark, Papirus-Dark, Bibata")
+done
+"$REPO/scripts/cursor.sh" Bibata-Modern-Ice 24 >/dev/null || warn "Standard-Cursor bleibt"
+DONE+=("Themes: Adwaita-dark, Papirus-Dark, Bibata-Cursor (Ice/Classic/Amber)")
 
 # ── 7. Configs verlinken ───────────────────────────────────
 step "Configs sichern & verlinken"
@@ -323,7 +323,6 @@ done
 xdg-user-dirs-update >/dev/null 2>&1 || true
 gsettings set org.gnome.desktop.interface gtk-theme 'Adwaita-dark'          2>/dev/null || true
 gsettings set org.gnome.desktop.interface icon-theme 'Papirus-Dark'         2>/dev/null || true
-gsettings set org.gnome.desktop.interface cursor-theme 'Bibata-Modern-Classic' 2>/dev/null || true
 gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark'        2>/dev/null || true
 gsettings set org.gnome.desktop.interface font-name 'JetBrains Mono 10'     2>/dev/null || true
 gsettings set org.gnome.desktop.interface monospace-font-name 'JetBrains Mono 11' 2>/dev/null || true

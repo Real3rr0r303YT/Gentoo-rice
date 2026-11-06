@@ -80,6 +80,13 @@ theme_colors() {
 }
 
 gen_colors() { # gen_colors [--quiet-terminals]
+    _gen_colors "$@"
+    # Login-Screen (SDDM) + hyprlock-Avatar im Hintergrund angleichen
+    ("$REPO/scripts/sddm-sync.sh" >/dev/null 2>&1 &)
+    return 0
+}
+
+_gen_colors() {
     theme_colors && return 0
     if command -v wal >/dev/null; then
         if [[ ${1:-} == --quiet-terminals ]]; then wal -q -n -s -t -e -i "$STATE/current.png" >/dev/null 2>&1 && return 0

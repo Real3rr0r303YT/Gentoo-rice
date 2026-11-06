@@ -9,8 +9,6 @@ configuration {
     display-window: "";
     disable-history: false;
     hover-select: true;
-    me-select-entry: "";
-    me-accept-entry: "MousePrimary";
 }
 
 @import "~/.cache/wal/colors-rice.rasi"

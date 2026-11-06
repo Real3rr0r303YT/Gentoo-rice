@@ -40,7 +40,69 @@ fi
 
 EMERGE=(env CONFIG_PROTECT_MASK=/etc/portage emerge --noreplace --getbinpkg --binpkg-respect-use=y
         --autounmask=y --autounmask-continue=y --quiet-build=y --keep-going=n)
-emerge_pkgs() { $SUDO "${EMERGE[@]}" "$@" || die "emerge fehlgeschlagen für: $*"; }
+SKIPPED=()
+
+# ── Paket-/Repo-Helfer ─────────────────────────────────────
+pkg_check() { # 0 = installierbar/installiert, 1 = in keinem Repo verfügbar
+    local out
+    portageq has_version / "$1" 2>/dev/null && return 0
+    out=$($SUDO emerge -p --quiet --autounmask=y --autounmask-continue=n "$1" 2>&1) && return 0
+    if grep -qE 'there are no ebuilds (to satisfy|built with USE)|have been masked|is not a valid package atom|is ambiguous' <<<"$out"; then
+        return 1
+    fi
+    return 0 # andere Probleme (Keywords/USE) löst autounmask beim echten emerge
+}
+
+emerge_pkgs() { # emerge_pkgs <atom…>  – nicht verfügbare Pakete werden gemeldet und übersprungen
+    local p todo=()
+    for p in "$@"; do
+        if pkg_check "$p"; then todo+=("$p")
+        else warn "nicht verfügbar, übersprungen: $p"; SKIPPED+=("$p"); fi
+    done
+    ((${#todo[@]})) || return 0
+    $SUDO "${EMERGE[@]}" "${todo[@]}" || die "emerge fehlgeschlagen für: ${todo[*]}"
+}
+
+repo_path() { local p; p=$(portageq get_repo_path / "$1" 2>/dev/null) || true; echo "${p:-/var/db/repos/$1}"; }
+repo_enabled() { eselect repository list -i 2>/dev/null | grep -w -- "$1" >/dev/null; }
+repo_synced() { local p; p=$(repo_path "$1"); [[ -d $p && -d $p/metadata && -n "$(ls -A "$p" 2>/dev/null)" ]]; }
+
+ensure_repo() { # aktivieren + syncen, falls nötig
+    if ! repo_enabled "$1"; then
+        $SUDO eselect repository enable "$1" >/dev/null || return 1
+        info "$1 aktiviert"
+    fi
+    if ! repo_synced "$1"; then
+        info "synchronisiere $1 …"
+        $SUDO emaint sync -r "$1" >/dev/null || return 1
+    fi
+    repo_synced "$1"
+}
+
+pkg_repos() { # Repos, die Ebuilds für <cat/pkg> enthalten
+    local r out=()
+    for r in $(portageq get_repos / 2>/dev/null); do
+        compgen -G "$(repo_path "$r")/$1/*.ebuild" >/dev/null && out+=("$r")
+    done
+    echo "${out[*]}"
+}
+
+hypr_keywords() { # Keywords für alle hypr*-Pakete aller Repos (sortiert)
+    local r p d cp e
+    local -A kw=() from=()
+    for r in $(portageq get_repos / 2>/dev/null); do
+        p=$(repo_path "$r"); [[ -d $p ]] || continue
+        for d in "$p"/*/hypr* "$p"/*/aquamarine "$p"/*/xdg-desktop-portal-hyprland "$p"/*/nwg-dock-hyprland; do
+            [[ -d $d ]] && compgen -G "$d/*.ebuild" >/dev/null || continue
+            cp=${d#"$p"/}
+            from[$cp]="${from[$cp]:+${from[$cp]},}$r"
+            [[ ${kw[$cp]:-} == "~amd64" ]] || kw[$cp]="**"
+            for e in "$d"/*.ebuild; do [[ $e == *-9999.ebuild ]] || { kw[$cp]="~amd64"; break; }; done
+        done
+    done
+    for cp in "${!kw[@]}"; do printf '%-42s %-7s # %s\n' "$cp" "${kw[$cp]}" "${from[$cp]}"; done | sort
+}
+
 
 write_root() { # write_root <datei>  (Inhalt von stdin, nur bei Änderung)
     local f=$1 tmp; tmp=$(mktemp)
@@ -62,20 +124,34 @@ as_dir() { # /etc/portage/package.* in Verzeichnisform sicherstellen
 # ── 1. Grundwerkzeuge ──────────────────────────────────────
 step "Grundwerkzeuge (git, eselect-repository)"
 emerge_pkgs dev-vcs/git app-eselect/eselect-repository
+command -v eselect >/dev/null && command -v git >/dev/null || die "git/eselect-repository konnten nicht installiert werden."
 ok "git + eselect-repository vorhanden"
 DONE+=("Grundwerkzeuge")
 
-# ── 2. GURU ────────────────────────────────────────────────
-step "GURU-Overlay"
-if ! eselect repository list -i 2>/dev/null | grep -w guru >/dev/null; then
-    $SUDO eselect repository enable guru
-    ok "GURU aktiviert"
-else
-    ok "GURU bereits aktiv"
+# ── 2. Repositories ────────────────────────────────────────
+step "Repositories: GURU & Hyprland-Quelle"
+ensure_repo guru || die "GURU konnte nicht aktiviert/synchronisiert werden (eselect repository enable guru && emaint sync -r guru)."
+ok "GURU aktiv + synchronisiert ($(repo_path guru))"
+
+if [[ -z $(pkg_repos gui-wm/hyprland) ]]; then
+    warn "gui-wm/hyprland nicht gefunden – synchronisiere Gentoo-Hauptrepo"
+    $SUDO emaint sync -r gentoo >/dev/null || warn "Sync von ::gentoo fehlgeschlagen"
 fi
-$SUDO emaint sync -r guru >/dev/null || die "Sync von GURU fehlgeschlagen."
-ok "GURU synchronisiert"
-DONE+=("GURU-Overlay aktiv + synchronisiert")
+if [[ -z $(pkg_repos gui-wm/hyprland) ]]; then
+    warn "gui-wm/hyprland weiterhin nicht gefunden – aktiviere hyproverlay"
+    ensure_repo hyproverlay && ok "hyproverlay aktiv + synchronisiert" || warn "hyproverlay konnte nicht eingerichtet werden"
+fi
+HYPR_REPOS=$(pkg_repos gui-wm/hyprland)
+[[ -n $HYPR_REPOS ]] || die "gui-wm/hyprland ist in keinem Repository verfügbar.
+   Aktive Repos: $(portageq get_repos / 2>/dev/null | tr '\n' ' ')
+   Prüfen: emaint sync -a  ·  eselect repository list -i  ·  ls /var/db/repos/gentoo/gui-wm/
+   Danach ./install.sh erneut starten."
+for p in gui-wm/hyprland gui-apps/hyprlock gui-apps/hypridle gui-libs/xdg-desktop-portal-hyprland gui-apps/hyprpaper; do
+    r=$(pkg_repos "$p")
+    if [[ -n $r ]]; then info "$p ← ${r// /, }"; else warn "$p in keinem Repo"; fi
+done
+ok "Hyprland verfügbar aus: ${HYPR_REPOS// /, }"
+DONE+=("Repos: GURU + Hyprland aus ${HYPR_REPOS// /, }")
 
 # ── 3. Portage-Konfiguration ───────────────────────────────
 step "Portage: USE-Flags, Keywords, Lizenzen"
@@ -94,28 +170,15 @@ gui-wm/hyprland X
 x11-terms/kitty wayland
 media-gfx/imagemagick png jpeg
 EOF
-write_root /etc/portage/package.accept_keywords/gentoo-rice <<'EOF'
-# Gentoo-rice – Hyprland-Ökosystem & GURU
-gui-wm/hyprland ~amd64
-gui-apps/hyprlock ~amd64
-gui-apps/hypridle ~amd64
-gui-apps/hyprpolkitagent ~amd64
-gui-libs/aquamarine ~amd64
-gui-libs/hyprutils ~amd64
-gui-libs/hyprcursor ~amd64
-gui-libs/hyprgraphics ~amd64
-gui-libs/hyprland-qtutils ~amd64
-gui-libs/hyprland-qt-support ~amd64
-gui-libs/hyprtoolkit ~amd64
-gui-libs/xdg-desktop-portal-hyprland ~amd64
-dev-libs/hyprlang ~amd64
-dev-libs/hyprland-protocols ~amd64
-dev-util/hyprwayland-scanner ~amd64
-dev-cpp/sdbus-c++ ~amd64
-gui-apps/nwg-dock-hyprland ~amd64
-games-util/mangohud ~amd64
-games-util/gamemode ~amd64
-EOF
+{
+    echo "# Gentoo-rice – automatisch erzeugt von install.sh"
+    echo "# Hyprland-Ökosystem (Repo-Herkunft als Kommentar)"
+    hypr_keywords
+    echo "# Abhängigkeiten / Gaming"
+    printf '%-42s %s\n' dev-cpp/sdbus-c++ "~amd64" dev-cpp/glaze "~amd64" \
+        games-util/mangohud "~amd64" games-util/gamemode "~amd64"
+} | write_root /etc/portage/package.accept_keywords/gentoo-rice
+info "$(grep -c '^[a-z]' /etc/portage/package.accept_keywords/gentoo-rice) Keyword-Einträge"
 write_root /etc/portage/package.license/gentoo-rice <<'EOF'
 sys-kernel/linux-firmware linux-fw-redistributable
 EOF
@@ -130,6 +193,7 @@ DONE+=("USE-Flags/Keywords in /etc/portage/*/gentoo-rice")
 
 # ── 4. Desktop-Pakete ──────────────────────────────────────
 step "Hyprland & Desktop-Pakete"
+pkg_check gui-wm/hyprland || die "gui-wm/hyprland ist nicht installierbar (emerge -p gui-wm/hyprland zeigt den Grund)."
 PKGS_DESKTOP=(
     gui-wm/hyprland gui-apps/hyprlock gui-apps/hypridle
     gui-libs/xdg-desktop-portal-hyprland sys-apps/xdg-desktop-portal-gtk
@@ -143,8 +207,10 @@ PKGS_DESKTOP=(
 PKGS_OPTIONAL=( gui-apps/hyprpolkitagent media-sound/pavucontrol xfce-base/thunar net-misc/networkmanager )
 emerge_pkgs "${PKGS_DESKTOP[@]}"
 for p in "${PKGS_OPTIONAL[@]}"; do
-    $SUDO "${EMERGE[@]}" "$p" >/dev/null 2>&1 && ok "$p" || warn "optional übersprungen: $p"
+    if ! pkg_check "$p"; then warn "optional, nicht verfügbar: $p"; SKIPPED+=("$p"); continue; fi
+    $SUDO "${EMERGE[@]}" "$p" >/dev/null 2>&1 && ok "$p" || { warn "optional fehlgeschlagen: $p"; SKIPPED+=("$p"); }
 done
+portageq has_version / gui-wm/hyprland || die "Hyprland wurde nicht installiert."
 ok "Desktop-Pakete installiert"
 DONE+=("Hyprland, hyprlock, hypridle, Waybar, Wofi, Mako, Dock, Kitty")
 
@@ -282,6 +348,10 @@ ok "Alles erledigt"
 printf '\n%s╭─ Zusammenfassung ─────────────────────────────╮%s\n' "$B" "$N"
 for d in "${DONE[@]}"; do printf '  %s✔%s %s\n' "$G" "$N" "$d"; done
 printf '%s╰───────────────────────────────────────────────╯%s\n' "$B" "$N"
+if ((${#SKIPPED[@]})); then
+    printf '\n%sÜbersprungen (nicht verfügbar):%s\n' "$Y$B" "$N"
+    for s in "${SKIPPED[@]}"; do printf '  %s!%s %s\n' "$Y" "$N" "$s"; done
+fi
 printf '\n%sJetzt neu starten:%s %s\n' "$B$Y" "$N" "loginctl reboot"
 printf '%sNach dem Login auf TTY1 startet Hyprland automatisch.%s\n' "$D" "$N"
 printf '%sSteam in Spielen: Startoptionen  →  gamemoderun mangohud %%command%%%s\n\n' "$D" "$N"

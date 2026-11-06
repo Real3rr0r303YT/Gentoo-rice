@@ -10,7 +10,7 @@
     "exclusive": true,
     "modules-left":   ["custom/music", "custom/prev", "custom/play", "custom/next", "mpris"],
     "modules-center": ["hyprland/workspaces"],
-    "modules-right":  ["cpu", "memory", "pulseaudio", "network", "bluetooth", "battery", "clock", "custom/power"],
+    "modules-right":  ["cpu", "memory", "pulseaudio", "network", "bluetooth", "battery", "clock", "custom/theme", "custom/power"],
 
     "custom/music": {
         "format": "",
@@ -102,6 +102,12 @@
         "format-alt": "{:%a %-d. %b  %H:%M}",
         "tooltip-format": "<tt>{calendar}</tt>",
         "calendar": { "mode": "month", "format": { "today": "<b><u>{}</u></b>" } }
+    },
+    "custom/theme": {
+        "format": "",
+        "tooltip-format": "Theme wechseln (Super+Shift+T)",
+        "on-click": "~/.local/share/gentoo-rice/scripts/theme-picker.sh",
+        "on-click-right": "~/.local/share/gentoo-rice/scripts/wallpaper-picker.sh"
     },
     "custom/power": {
         "format": "",

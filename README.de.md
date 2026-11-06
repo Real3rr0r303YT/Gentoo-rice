@@ -13,6 +13,7 @@ Wallpaper-basiertes **Anime-/Lofi**-Hyprland-Rice für **Gentoo (OpenRC)** – a
 ## Features
 
 - **Dynamische Farben** mit pywal16: Hyprland-Borders, Waybar, kitty, rofi, mako, cava, btop, fastfetch und hyprlock werden bei jedem Wallpaper-Wechsel neu eingefärbt
+- **Theme-Wechsler** (`Super + Shift + T`): lofi (Farben aus dem Wallpaper), fsociety, clean, Catppuccin Mocha/Latte, Nord, Gruvbox, Tokyo Night, Sakura – Farben, Optik, Wallpaper und GTK-Farben mit einem Klick
 - **Hyprland** – halbtransparente Fenster, starker Blur, 10px Rundung, dünner Akzent-Border (Verlauf), 10px Gaps, Popin-/Slide-Animationen
 - **Waybar** als drei schwebende Inseln:
   links Media-Player (prev/play/next + Titel über playerctl) · Mitte Workspace-Pills (aktiver breiter, in Akzentfarbe) · rechts CPU, RAM, Lautstärke, WLAN, Bluetooth, Akku, Uhrzeit, Power
@@ -23,6 +24,7 @@ Wallpaper-basiertes **Anime-/Lofi**-Hyprland-Rice für **Gentoo (OpenRC)** – a
 - **hyprlock** in denselben dynamischen Farben, zeigt den aktuellen Song
 - **Claude Code** standardmäßig über den offiziellen nativen Installer (`Super + K` öffnet es im Terminal)
 - **Firefox**, rofi-Launcher, mako-Benachrichtigungen, Papirus-Icons, Bibata-Cursor
+- **.exe-Spiele:** Proton-GE für Steam, ProtonUp-Qt, Bottles (`.exe` per Doppelklick)
 - **Gaming:** Mesa/RADV für Radeon 780M, Vulkan-Tools, Flatpak + Flathub, Steam (Flatpak), gamemode, MangoHud (nativ + Flatpak-Layer); Steam und Spiele ohne Blur/Transparenz, Spiele im Vollbild mit Tearing für niedrige Latenz
 
 ## Installation
@@ -101,6 +103,42 @@ Installiert die Build-Abhängigkeiten per emerge, klont das Repo mit Submodulen 
 - Pausieren hält den Prozess an (SIGSTOP) – das letzte Bild bleibt sichtbar
 - Es werden keine Wallpaper oder Workshop-Inhalte mitgeliefert
 
+## Themes
+
+`Super + Shift + T` (oder das Paletten-Icon in der Waybar) öffnet eine Leiste mit Farbvorschau. Ein Theme setzt:
+
+- Farben für Hyprland-Rahmen, Waybar, kitty, rofi, mako, cava, btop, fastfetch, hyprlock und **GTK-3/4-Apps** (`~/.config/gtk-*/gtk.css`)
+- Optik: Gaps, Rundung, Transparenz, Blur
+- Hell/Dunkel für GTK/libadwaita
+- ein erzeugtes Verlaufs-Wallpaper in den Theme-Farben
+
+| Theme | Stil |
+|---|---|
+| `lofi` | Farben aus dem aktuellen Wallpaper (pywal16), Standard |
+| `fsociety` | Schwarz/Rot, kantig |
+| `clean` | minimalistisch dunkel, blauer Akzent |
+| `catppuccin-mocha` / `catppuccin-latte` | Pastell dunkel / hell |
+| `nord` | kühles Blau-Grau |
+| `gruvbox` | warm, retro |
+| `tokyo-night` | Neon blau/lila |
+| `sakura` | Kirschblüten-Rosa |
+
+Bei einem festen Theme behalten Wallpaper aus `Super + W` die Theme-Farben; mit `lofi` kommen die Farben wieder aus dem Wallpaper.
+
+```sh
+~/.local/share/gentoo-rice/scripts/theme.sh list
+~/.local/share/gentoo-rice/scripts/theme.sh set nord
+```
+
+Eigenes Theme: `themes/nord/` nach `themes/<name>/` kopieren und `theme.conf` anpassen (Palette, Optik, `WALLPAPER=gradient|keep`).
+
+## Proton & .exe-Spiele
+
+- **Steam-Spiele:** Steam (Flatpak) bringt Proton mit. Einmal aktivieren: *Steam → Einstellungen → Kompatibilität → „Steam Play für alle anderen Titel aktivieren“*. **GE-Proton** (Flatpak-Erweiterung) ist dort oder pro Spiel (*Eigenschaften → Kompatibilität*) wählbar.
+- **ProtonUp-Qt** installiert/aktualisiert weitere Proton-Versionen (GE-Proton, Wine-GE).
+- **Einzelne .exe-Spiele/Installer:** `.exe` doppelklicken → öffnet sich mit **Bottles** (Flasche vom Typ „Gaming“ empfohlen). Alternativ in Steam: *Ein Nicht-Steam-Spiel hinzufügen* und Proton wählen.
+- Bottles darf auf deinen Home-Ordner und `/run/media` (externe Laufwerke) zugreifen.
+
 ## Claude Code
 
 `install.sh` installiert [Claude Code](https://claude.ai/code) über den offiziellen nativen Installer (`curl -fsSL https://claude.ai/install.sh | bash`), ergänzt `~/.local/bin` im `PATH` (`~/.bashrc`) und prüft `claude --version`. Danach aktualisiert sich Claude Code selbst.
@@ -150,6 +188,7 @@ Am Ende erscheint eine Übersicht der installierten Versionen.
 | `Super + Leertaste` | Launcher (rofi) |
 | `Super + W` | Wallpaper-Picker (Bilder, Videos, Wallpaper Engine) |
 | `Super + Shift + W` | Zufälliges Wallpaper |
+| `Super + Shift + T` | Theme-Wechsler |
 | `Super + B` | Firefox |
 | `Super + G` | Steam |
 | `Super + E` | Dateimanager |
@@ -187,13 +226,14 @@ waybar/      config.jsonc, style.css (colors.css → generiert)
 kitty/       kitty.conf (colors-wal.conf → generiert)
 rofi/        config.rasi (Launcher), wallpaper.rasi (Picker), menu.rasi
 wal/         templates/ für pywal16 (Hyprland, Waybar, rofi, mako, cava)
+themes/      Theme-Vorlagen (theme.conf)
 fastfetch/   config.jsonc
 firefox/     user.js, userChrome.css, policies.json
 gtk/         gtk-3.0 / gtk-4.0 settings.ini
 vscode/      settings.json, code-flags.conf
 wallpapers/  3 generierte Verlaufs-Platzhalter
 config/      wallpaperengine.conf (Vorlage)
-scripts/     wallpaper.sh, wallpaper-picker.sh, we-set.sh, install-claude-code.sh, dev-setup.sh, …
+scripts/     wallpaper.sh, wallpaper-picker.sh, theme.sh, theme-picker.sh, we-set.sh, install-claude-code.sh, …
 ```
 
 ## Unterstützen

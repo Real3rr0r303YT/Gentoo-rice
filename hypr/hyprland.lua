@@ -25,6 +25,16 @@ if ok and type(wal) == "table" then
     for k, v in pairs(wal) do c[k] = v end
 end
 
+-- Optik des aktiven Themes (scripts/theme.sh → ~/.cache/rice/theme-hypr.lua)
+local look = {
+    gaps_in = 5, gaps_out = 10, rounding = 10, border_size = 2,
+    active_opacity = 0.85, inactive_opacity = 0.75, blur_size = 12, blur_passes = 4,
+}
+local ok_look, theme_look = pcall(dofile, home .. "/.cache/rice/theme-hypr.lua")
+if ok_look and type(theme_look) == "table" then
+    for k, v in pairs(theme_look) do look[k] = v end
+end
+
 ---------------------
 ---- PROGRAMME ------
 ---------------------
@@ -83,9 +93,9 @@ end)
 
 hl.config({
     general = {
-        gaps_in          = 5,
-        gaps_out         = 10,
-        border_size      = 2,
+        gaps_in          = look.gaps_in,
+        gaps_out         = look.gaps_out,
+        border_size      = look.border_size,
         col = {
             active_border   = { colors = { c.accent, c.accent2 }, angle = 45 },
             inactive_border = c.muted,
@@ -96,15 +106,15 @@ hl.config({
     },
 
     decoration = {
-        rounding           = 10,
-        active_opacity     = 0.85,
-        inactive_opacity   = 0.75,
+        rounding           = look.rounding,
+        active_opacity     = look.active_opacity,
+        inactive_opacity   = look.inactive_opacity,
         fullscreen_opacity = 1.0,
 
         blur = {
             enabled           = true,
-            size              = 12,
-            passes            = 4,
+            size              = look.blur_size,
+            passes            = look.blur_passes,
             new_optimizations = true,
             ignore_opacity    = true,
             noise             = 0.02,
@@ -252,6 +262,7 @@ hl.bind(mod .. " + B",           exec(browser))
 hl.bind(mod .. " + G",           exec(steam))
 hl.bind(mod .. " + W",           exec(scripts .. "/wallpaper-picker.sh"))
 hl.bind(mod .. " + SHIFT + W",   exec(scripts .. "/wallpaper.sh random"))
+hl.bind(mod .. " + SHIFT + T",   exec(scripts .. "/theme-picker.sh"))
 hl.bind(mod .. " + Q",           hl.dsp.window.close())
 hl.bind(mod .. " + F",           hl.dsp.window.fullscreen())
 hl.bind(mod .. " + V",           hl.dsp.window.float({ action = "toggle" }))

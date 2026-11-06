@@ -174,6 +174,8 @@ dry_run() {
     info "Firefox-Policies nach /etc/firefox/policies (+ /opt/firefox/distribution), Standardbrowser"
     info "Dienste: elogind (boot), dbus (default), bluetooth (default, falls bluez)"
     info "Flatpak: Flathub (user), com.valvesoftware.Steam, MangoHud-Vulkan-Layer"
+    info "Proton/.exe: ${PROTON_FLATPAKS[*]}; .exe-Dateien öffnen mit Bottles"
+    info "Themes: Standard lofi (Farben aus dem Wallpaper), Wechsel mit Super+Shift+T"
     info "Autostart: Hyprland auf TTY1 (~/.bash_profile), fastfetch in kitty (~/.bashrc)"
     if ((CLAUDE)); then info "Claude Code: nativer Installer (claude.ai/install.sh), PATH in ~/.bashrc, Super+K"; fi
     if ((DEV)); then info "Dev-Setup: scripts/dev-setup.sh"; fi
@@ -309,6 +311,10 @@ for entry in "${LINKS[@]}"; do
     link_one "$src" "${entry#*|}"
 done
 # Links im Repo auf die generierten Farben (gitignored)
+# GTK-Farben des aktiven Themes (wal/templates/gtk-colors.css)
+for entry in "${CACHE_LINKS[@]}"; do
+    link_one "$HOME/${entry%%|*}" "${entry#*|}"
+done
 for entry in "${GENERATED_LINKS[@]}"; do
     ln -sfn "$HOME/${entry#*|}" "$REPO/${entry%%|*}"
 done
@@ -515,8 +521,26 @@ else
         flatpak override --user --filesystem=xdg-config/MangoHud:ro --talk-name=com.feralinteractive.GameMode \
             com.valvesoftware.Steam || warn "flatpak override fehlgeschlagen"
     fi
+
+    # Proton & .exe-Spiele: Proton-GE für Steam, ProtonUp-Qt, Bottles
+    for app in "${PROTON_FLATPAKS[@]}"; do
+        if flatpak info --user "$app" >/dev/null 2>&1; then ok "$app vorhanden"
+        elif flatpak install --user -y --noninteractive flathub "$app"; then ok "$app installiert"
+        else warn "$app nicht installiert"; FAILED+=("$app (Flatpak)"); fi
+    done
+    # .exe-Dateien per Doppelklick mit Bottles öffnen
+    if flatpak info --user com.usebottles.bottles >/dev/null 2>&1; then
+        if xdg-mime default com.usebottles.bottles.desktop application/x-ms-dos-executable \
+            application/x-msdownload application/vnd.microsoft.portable-executable application/x-msi 2>/dev/null; then
+            ok ".exe/.msi → Bottles"
+        else
+            warn "xdg-mime für .exe fehlgeschlagen"
+        fi
+        # Bottles darf Spiele aus dem Home-Ordner und von weiteren Laufwerken starten
+        flatpak override --user --filesystem=home --filesystem=/run/media com.usebottles.bottles || true
+    fi
 fi
-DONE+=("gamemode, mangohud, Flatpak + Flathub, Steam")
+DONE+=("gamemode, mangohud, Flatpak + Flathub, Steam, Proton-GE, ProtonUp-Qt, Bottles")
 
 # ── Claude Code ────────────────────────────────────────────
 if [[ $CLAUDE -eq 1 ]]; then

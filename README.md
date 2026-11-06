@@ -21,6 +21,7 @@ Wallpaper-driven **anime / lofi** Hyprland rice for **Gentoo (OpenRC)** – ever
 - **Wallpaper Engine** live wallpapers from Steam (optional, `./install.sh --we`)
 - **Terminal toys** as floating windows: cava, btop, cmatrix, tty-clock, fastfetch (Gentoo logo), lyrics overlay (sptlrx)
 - **hyprlock** in the same dynamic colors, shows the current song
+- **Claude Code** installed by default via the official native installer (`Super + K` opens it in a terminal)
 - **Firefox**, rofi launcher, mako notifications, Papirus icons, Bibata cursor
 - **Gaming:** Mesa/RADV for Radeon 780M, Vulkan tools, Flatpak + Flathub, Steam (Flatpak), gamemode, MangoHud (native + Flatpak layer); Steam and games without blur/transparency, games fullscreen with tearing for low latency
 
@@ -32,6 +33,7 @@ git clone https://github.com/Real3rr0r303YT/Gentoo-rice && cd Gentoo-rice && ./i
 
 ```sh
 ./install.sh --dry-run   # only show what would be installed/changed (no sudo, no changes)
+./install.sh --no-claude # without Claude Code
 ```
 
 Run as a normal user – `sudo`/`doas` is only used for system steps.
@@ -99,6 +101,17 @@ Installs the build dependencies via emerge, clones the repo with submodules to `
 - Pausing stops the process (SIGSTOP) – the last frame stays visible
 - No wallpapers or Workshop content are shipped with this repo
 
+## Claude Code
+
+`install.sh` installs [Claude Code](https://claude.ai/code) with the official native installer (`curl -fsSL https://claude.ai/install.sh | bash`), adds `~/.local/bin` to `PATH` in `~/.bashrc` and checks `claude --version`. Claude Code updates itself afterwards.
+
+```sh
+claude                              # start in the current folder (first start: log in via browser)
+./scripts/install-claude-code.sh    # install/check Claude Code only
+```
+
+`Super + K` opens Claude Code in a new terminal. The full developer setup (`--dev`) adds VS Code with the Claude Code extension.
+
 ## Firefox
 
 - Installs `www-client/firefox-bin` (no compiling) and sets it as default browser (`xdg-mime`/`xdg-settings` for http, https, HTML)
@@ -146,6 +159,7 @@ A summary of installed versions is printed at the end.
 | `Super + C` | tty-clock |
 | `Super + I` | fastfetch |
 | `Super + Y` | Lyrics overlay (toggle) |
+| `Super + K` | Claude Code (terminal) |
 | `Super + Q` | Close window |
 | `Super + F` | Fullscreen |
 | `Super + V` | Toggle floating |
@@ -179,7 +193,7 @@ gtk/         gtk-3.0 / gtk-4.0 settings.ini
 vscode/      settings.json, code-flags.conf
 wallpapers/  3 generated gradient placeholders
 config/      wallpaperengine.conf (template)
-scripts/     wallpaper.sh, wallpaper-picker.sh, we-set.sh, wallpaperengine.sh, lyrics.sh, dev-setup.sh, …
+scripts/     wallpaper.sh, wallpaper-picker.sh, we-set.sh, install-claude-code.sh, dev-setup.sh, …
 ```
 
 ## Support

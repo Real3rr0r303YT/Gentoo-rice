@@ -269,6 +269,9 @@ hl.bind(mod .. " + C", exec(float .. " -o initial_window_width=70c -o initial_wi
 hl.bind(mod .. " + I", exec(float .. " -o initial_window_width=90c -o initial_window_height=24c --hold sh -c 'GENTOO_RICE_FASTFETCH=1 fastfetch'"))
 hl.bind(mod .. " + Y", exec(scripts .. "/lyrics.sh"))
 
+-- Claude Code im Terminal (Shell bleibt danach offen)
+hl.bind(mod .. " + K", exec("kitty --class claude-code sh -c 'cd ~ && claude; exec bash'"))
+
 -- Screenshots
 hl.bind("Print",         exec(scripts .. "/screenshot.sh area"))
 hl.bind("SHIFT + Print", exec(scripts .. "/screenshot.sh full"))

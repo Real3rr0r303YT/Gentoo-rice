@@ -21,6 +21,7 @@ Wallpaper-basiertes **Anime-/Lofi**-Hyprland-Rice für **Gentoo (OpenRC)** – a
 - **Wallpaper Engine** Live-Wallpaper aus Steam (optional, `./install.sh --we`)
 - **Terminal-Spielzeug** als schwebende Fenster: cava, btop, cmatrix, tty-clock, fastfetch (Gentoo-Logo), Songtext-Overlay (sptlrx)
 - **hyprlock** in denselben dynamischen Farben, zeigt den aktuellen Song
+- **Claude Code** standardmäßig über den offiziellen nativen Installer (`Super + K` öffnet es im Terminal)
 - **Firefox**, rofi-Launcher, mako-Benachrichtigungen, Papirus-Icons, Bibata-Cursor
 - **Gaming:** Mesa/RADV für Radeon 780M, Vulkan-Tools, Flatpak + Flathub, Steam (Flatpak), gamemode, MangoHud (nativ + Flatpak-Layer); Steam und Spiele ohne Blur/Transparenz, Spiele im Vollbild mit Tearing für niedrige Latenz
 
@@ -32,6 +33,7 @@ git clone https://github.com/Real3rr0r303YT/Gentoo-rice && cd Gentoo-rice && ./i
 
 ```sh
 ./install.sh --dry-run   # nur anzeigen, was installiert/geändert würde (kein sudo, keine Änderungen)
+./install.sh --no-claude # ohne Claude Code
 ```
 
 Als normaler Benutzer starten – `sudo`/`doas` wird nur für Systemschritte genutzt.
@@ -99,6 +101,17 @@ Installiert die Build-Abhängigkeiten per emerge, klont das Repo mit Submodulen 
 - Pausieren hält den Prozess an (SIGSTOP) – das letzte Bild bleibt sichtbar
 - Es werden keine Wallpaper oder Workshop-Inhalte mitgeliefert
 
+## Claude Code
+
+`install.sh` installiert [Claude Code](https://claude.ai/code) über den offiziellen nativen Installer (`curl -fsSL https://claude.ai/install.sh | bash`), ergänzt `~/.local/bin` im `PATH` (`~/.bashrc`) und prüft `claude --version`. Danach aktualisiert sich Claude Code selbst.
+
+```sh
+claude                              # im aktuellen Ordner starten (beim ersten Start Login im Browser)
+./scripts/install-claude-code.sh    # nur Claude Code installieren/prüfen
+```
+
+`Super + K` öffnet Claude Code in einem neuen Terminal. Das komplette Entwickler-Setup (`--dev`) bringt zusätzlich VS Code mit der Claude-Code-Extension.
+
 ## Firefox
 
 - Installiert `www-client/firefox-bin` (kein Kompilieren) und setzt ihn als Standardbrowser (`xdg-mime`/`xdg-settings` für http, https, HTML)
@@ -146,6 +159,7 @@ Am Ende erscheint eine Übersicht der installierten Versionen.
 | `Super + C` | tty-clock |
 | `Super + I` | fastfetch |
 | `Super + Y` | Songtext-Overlay (an/aus) |
+| `Super + K` | Claude Code (Terminal) |
 | `Super + Q` | Fenster schließen |
 | `Super + F` | Vollbild |
 | `Super + V` | Schwebend umschalten |
@@ -179,7 +193,7 @@ gtk/         gtk-3.0 / gtk-4.0 settings.ini
 vscode/      settings.json, code-flags.conf
 wallpapers/  3 generierte Verlaufs-Platzhalter
 config/      wallpaperengine.conf (Vorlage)
-scripts/     wallpaper.sh, wallpaper-picker.sh, we-set.sh, wallpaperengine.sh, lyrics.sh, dev-setup.sh, …
+scripts/     wallpaper.sh, wallpaper-picker.sh, we-set.sh, install-claude-code.sh, dev-setup.sh, …
 ```
 
 ## Unterstützen

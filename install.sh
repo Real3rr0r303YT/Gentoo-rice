@@ -6,23 +6,25 @@ set -Eeuo pipefail
 
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-DEV=0 WE=0 DRY_RUN=0
+DEV=0 WE=0 DRY_RUN=0 CLAUDE=1
 for arg in "$@"; do
     case $arg in
         --dev)     DEV=1 ;;
         --we)      WE=1 ;;
         --dry-run) DRY_RUN=1 ;;
+        --no-claude) CLAUDE=0 ;;
         -h|--help)
-            printf 'Nutzung: ./install.sh [--dev] [--we] [--dry-run]\n'
+            printf 'Nutzung: ./install.sh [--dev] [--we] [--no-claude] [--dry-run]\n'
             printf '  --dev      zusätzlich Entwickler-Setup (scripts/dev-setup.sh)\n'
             printf '  --we       zusätzlich Wallpaper Engine (scripts/wallpaperengine.sh)\n'
+            printf '  --no-claude  Claude Code nicht installieren\n'
             printf '  --dry-run  nur anzeigen, was installiert/geändert würde (keine Änderungen)\n'
             exit 0 ;;
         *) printf 'Unbekannte Option: %s (siehe --help)\n' "$arg" >&2; exit 1 ;;
     esac
 done
 
-TOTAL=$((14 + DEV + WE))
+TOTAL=$((14 + CLAUDE + DEV + WE))
 KW_FILE=/etc/portage/package.accept_keywords/gentoo-rice-auto
 # shellcheck source=scripts/links.sh
 source "$REPO/scripts/links.sh"
@@ -173,6 +175,7 @@ dry_run() {
     info "Dienste: elogind (boot), dbus (default), bluetooth (default, falls bluez)"
     info "Flatpak: Flathub (user), com.valvesoftware.Steam, MangoHud-Vulkan-Layer"
     info "Autostart: Hyprland auf TTY1 (~/.bash_profile), fastfetch in kitty (~/.bashrc)"
+    if ((CLAUDE)); then info "Claude Code: nativer Installer (claude.ai/install.sh), PATH in ~/.bashrc, Super+K"; fi
     if ((DEV)); then info "Dev-Setup: scripts/dev-setup.sh"; fi
     if ((WE)); then info "Wallpaper Engine: scripts/wallpaperengine.sh"; fi
 
@@ -514,6 +517,19 @@ else
     fi
 fi
 DONE+=("gamemode, mangohud, Flatpak + Flathub, Steam")
+
+# ── Claude Code ────────────────────────────────────────────
+if [[ $CLAUDE -eq 1 ]]; then
+    step "Claude Code (nativer Installer)"
+    if out=$("$REPO/scripts/install-claude-code.sh" 2>&1); then
+        while IFS= read -r l; do info "$l"; done <<<"$out"
+        ok "Claude Code bereit – im Terminal: claude  ·  Taste: Super+K"
+        DONE+=("Claude Code ($(claude --version 2>/dev/null || echo installiert))")
+    else
+        printf '%s\n' "$out" >> "$LOG"
+        warn "Claude Code konnte nicht installiert werden"; FAILED+=("Claude Code (einzeln: ./scripts/install-claude-code.sh)")
+    fi
+fi
 
 # ── Wallpaper Engine (optional) ────────────────────────────
 if [[ $WE -eq 1 ]]; then

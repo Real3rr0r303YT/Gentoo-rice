@@ -1,0 +1,9 @@
+/* pywal16 → Waybar */
+@define-color bg {background};
+@define-color fg {foreground};
+@define-color accent {color4};
+@define-color accent2 {color5};
+@define-color muted {color8};
+@define-color c1 {color1};
+@define-color c2 {color2};
+@define-color c3 {color3};

@@ -2,8 +2,9 @@
 # Erzeugt einen weichen, dunklen Verlauf (ImageMagick 7).
 # Nutzung: gen-wallpaper.sh [BREITExHÖHE] [Ausgabe]
 set -e
+mkdir -p "$HOME/Pictures/wallpapers"
 size=${1:-2880x1800}
-out=${2:-"$(dirname "$0")/../wallpapers/gradient.png"}
+out=${2:-"$HOME/Pictures/wallpapers/gradient-$(date +%s).png"}
 w=${size%x*}; h=${size#*x}
 magick -size "$size" xc:'#141416' \
   \( -size "$((w*3/2))x$((h*3/2))" radial-gradient:'#1b2b48'-'#141416' -geometry -"$((w/2))"-"$((h/2))" \) -compose lighten -composite \

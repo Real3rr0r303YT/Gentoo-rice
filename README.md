@@ -167,7 +167,8 @@ A summary of installed versions is printed at the end.
 ## Structure
 
 ```
-hypr/        hyprland.conf, hyprlock.conf, hypridle.conf, compat/ (rules per Hyprland version)
+hypr/        hyprland.lua (Lua config, new Hyprland e.g. 0.57), hyprland.conf + compat/ (older hyprlang versions),
+             hyprlock.conf, hypridle.conf
 waybar/      config.jsonc, style.css (colors.css → generated)
 kitty/       kitty.conf (colors-wal.conf → generated)
 rofi/        config.rasi (launcher), wallpaper.rasi (picker), menu.rasi

@@ -23,7 +23,7 @@ if [[ -t 1 ]]; then
 else
     B=; D=; R=; G=; Y=; C=; N=
 fi
-TOTAL=$((13 + DEV)); STEP=0; CURRENT="Start"
+TOTAL=$((14 + DEV)); STEP=0; CURRENT="Start"
 DONE=()
 step() { STEP=$((STEP + 1)); CURRENT="$*"; printf '\n%s[%2d/%d]%s %s%s%s\n' "$C$B" "$STEP" "$TOTAL" "$N" "$B" "$*" "$N"; }
 info() { printf '  %s•%s %s\n' "$D" "$N" "$*"; }
@@ -55,6 +55,14 @@ SKIPPED=()
 pkg_check() { # 0 = installierbar/installiert, 1 = in keinem Repo verfügbar
     local out
     portageq has_version / "$1" 2>/dev/null && return 0
+    [[ -n $(pkg_repos "$1") ]] || return 1
+    # nur ~amd64 vorhanden → Keyword freigeben
+    if [[ -z $(portageq best_visible / ebuild "$1" 2>/dev/null) ]]; then
+        $SUDO mkdir -p /etc/portage/package.accept_keywords
+        $SUDO touch /etc/portage/package.accept_keywords/gentoo-rice-auto
+        $SUDO grep -qxF "$1 ~amd64" /etc/portage/package.accept_keywords/gentoo-rice-auto ||
+            echo "$1 ~amd64" | $SUDO tee -a /etc/portage/package.accept_keywords/gentoo-rice-auto >/dev/null
+    fi
     out=$($SUDO emerge -p --quiet --autounmask=y --autounmask-continue=n "$1" 2>&1) && return 0
     if grep -qE 'there are no ebuilds (to satisfy|built with USE)|have been masked|is not a valid package atom|is ambiguous' <<<"$out"; then
         return 1
@@ -62,11 +70,15 @@ pkg_check() { # 0 = installierbar/installiert, 1 = in keinem Repo verfügbar
     return 0 # andere Probleme (Keywords/USE) löst autounmask beim echten emerge
 }
 
-emerge_pkgs() { # emerge_pkgs <atom…>  – nicht verfügbare Pakete werden gemeldet und übersprungen
-    local p todo=()
-    for p in "$@"; do
-        if pkg_check "$p"; then todo+=("$p")
-        else warn "nicht verfügbar, übersprungen: $p"; SKIPPED+=("$p"); fi
+emerge_pkgs() { # emerge_pkgs "<atom>[|alternative…]" …  – nicht verfügbare Pakete werden gemeldet und übersprungen
+    local spec a p todo=()
+    for spec in "$@"; do
+        p=""
+        for a in ${spec//|/ }; do
+            if portageq has_version / "$a" 2>/dev/null || [[ -n $(pkg_repos "$a") ]]; then p=$a; break; fi
+        done
+        if [[ -n $p ]] && pkg_check "$p"; then todo+=("$p")
+        else warn "nicht verfügbar, übersprungen: ${spec//|/ oder }"; SKIPPED+=("${spec%%|*}"); fi
     done
     ((${#todo[@]})) || return 0
     $SUDO "${EMERGE[@]}" "${todo[@]}" || die "emerge fehlgeschlagen für: ${todo[*]}"
@@ -178,6 +190,10 @@ gui-apps/waybar network pulseaudio tray
 gui-wm/hyprland X
 x11-terms/kitty wayland
 media-gfx/imagemagick png jpeg
+x11-misc/rofi wayland
+media-sound/cava pulseaudio pipewire
+media-video/mpv libmpv
+media-video/ffmpeg x264 vpx
 EOF
 {
     echo "# Gentoo-rice – automatisch erzeugt von install.sh"
@@ -206,56 +222,56 @@ pkg_check gui-wm/hyprland || die "gui-wm/hyprland ist nicht installierbar (emerg
 PKGS_DESKTOP=(
     gui-wm/hyprland gui-apps/hyprlock gui-apps/hypridle
     gui-libs/xdg-desktop-portal-hyprland sys-apps/xdg-desktop-portal-gtk
-    gui-apps/waybar gui-apps/wofi gui-apps/mako gui-apps/swaybg
-    gui-apps/nwg-dock-hyprland x11-terms/kitty app-misc/fastfetch x11-misc/xdg-utils
-    gui-apps/grim gui-apps/slurp gui-apps/wl-clipboard
+    gui-apps/waybar x11-misc/rofi gui-apps/mako x11-terms/kitty x11-misc/xdg-utils
+    "gui-apps/awww|gui-apps/swww" gui-apps/mpvpaper media-video/mpv media-video/ffmpeg
+    media-sound/playerctl gui-apps/grim gui-apps/slurp gui-apps/wl-clipboard
     app-misc/brightnessctl x11-libs/libnotify x11-misc/xdg-user-dirs
-    gnome-base/dconf media-gfx/imagemagick dev-lang/sassc
+    gnome-base/dconf media-gfx/imagemagick dev-python/pipx
     sys-auth/elogind sys-apps/dbus sys-auth/polkit
 )
-PKGS_OPTIONAL=( gui-apps/hyprpolkitagent media-sound/pavucontrol xfce-base/thunar net-misc/networkmanager )
+PKGS_TOYS=(
+    app-misc/fastfetch media-sound/cava sys-process/btop
+    "app-misc/cmatrix|games-misc/cmatrix|x11-misc/cmatrix"
+    "app-misc/tty-clock|x11-misc/tty-clock|games-misc/tty-clock"
+)
+PKGS_OPTIONAL=( gui-apps/hyprpolkitagent media-sound/pavucontrol xfce-base/thunar net-misc/networkmanager
+                net-wireless/bluez net-wireless/blueman x11-themes/papirus-icon-theme )
 emerge_pkgs "${PKGS_DESKTOP[@]}"
+emerge_pkgs "${PKGS_TOYS[@]}"
 for p in "${PKGS_OPTIONAL[@]}"; do
     if ! pkg_check "$p"; then warn "optional, nicht verfügbar: $p"; SKIPPED+=("$p"); continue; fi
     $SUDO "${EMERGE[@]}" "$p" >/dev/null 2>&1 && ok "$p" || { warn "optional fehlgeschlagen: $p"; SKIPPED+=("$p"); }
 done
 portageq has_version / gui-wm/hyprland || die "Hyprland wurde nicht installiert."
 ok "Desktop-Pakete installiert"
-DONE+=("Hyprland, hyprlock, hypridle, Waybar, Wofi, Mako, Dock, Kitty")
+DONE+=("Hyprland, hyprlock, hypridle, Waybar, rofi, mako, kitty, swww, mpvpaper, cava, btop, cmatrix, tty-clock")
 
 # ── 5. Fonts ───────────────────────────────────────────────
-step "Fonts (Inter, JetBrains Mono, Font Awesome)"
-emerge_pkgs media-fonts/inter media-fonts/jetbrains-mono media-fonts/fontawesome media-fonts/noto-emoji
+step "Fonts (JetBrains Mono, Font Awesome, Noto CJK/Emoji)"
+emerge_pkgs media-fonts/jetbrains-mono media-fonts/fontawesome media-fonts/noto-emoji media-fonts/noto-cjk
 fc-cache -f >/dev/null 2>&1 || true
 ok "Fonts installiert"
-DONE+=("Fonts Inter + JetBrains Mono")
+DONE+=("Fonts JetBrains Mono, Font Awesome, Noto CJK")
 
 # ── 6. Themes ──────────────────────────────────────────────
-step "WhiteSur GTK-, Icon- und Cursor-Theme"
-SRC="$HOME/.cache/gentoo-rice/src"; mkdir -p "$SRC"
-fetch() { # fetch <repo>
-    if [[ -d $SRC/$1/.git ]]; then git -C "$SRC/$1" pull -q --ff-only || warn "Update von $1 fehlgeschlagen, nutze vorhandene Version"
-    else git clone -q --depth=1 "https://github.com/vinceliuice/$1.git" "$SRC/$1"; fi
-}
-if [[ ! -d $HOME/.themes/WhiteSur-Dark ]]; then
-    fetch WhiteSur-gtk-theme
-    (cd "$SRC/WhiteSur-gtk-theme" && ./install.sh -c dark -d "$HOME/.themes" >/dev/null) || die "WhiteSur-GTK-Installation fehlgeschlagen."
-fi
-ok "GTK: WhiteSur-Dark"
-if [[ ! -d $HOME/.local/share/icons/WhiteSur-dark ]]; then
-    fetch WhiteSur-icon-theme
-    (cd "$SRC/WhiteSur-icon-theme" && ./install.sh -d "$HOME/.local/share/icons" >/dev/null) || die "WhiteSur-Icon-Installation fehlgeschlagen."
-fi
-ok "Icons: WhiteSur-dark"
-if [[ ! -d $HOME/.local/share/icons/WhiteSur-cursors ]]; then
-    fetch WhiteSur-cursors
-    mkdir -p "$HOME/.local/share/icons"
-    cp -r "$SRC/WhiteSur-cursors/dist" "$HOME/.local/share/icons/WhiteSur-cursors"
+step "Themes: Adwaita-dark, Papirus-Dark, Bibata-Cursor"
+if [[ -d /usr/share/icons/Papirus-Dark || -d $HOME/.local/share/icons/Papirus-Dark ]]; then ok "Icons: Papirus-Dark"
+else warn "Papirus-Dark nicht installiert (x11-themes/papirus-icon-theme)"; fi
+if [[ ! -d $HOME/.local/share/icons/Bibata-Modern-Classic ]]; then
+    tmp=$(mktemp -d)
+    if curl -fsSL -o "$tmp/b.tar.xz" https://github.com/ful1e5/Bibata_Cursor/releases/latest/download/Bibata-Modern-Classic.tar.xz \
+        && mkdir -p "$HOME/.local/share/icons" && tar -xJf "$tmp/b.tar.xz" -C "$HOME/.local/share/icons"; then
+        ok "Cursor: Bibata-Modern-Classic"
+    else
+        warn "Bibata-Cursor konnte nicht geladen werden – Standard-Cursor bleibt"; SKIPPED+=("Bibata-Cursor")
+    fi
+    rm -rf "$tmp"
+else
+    ok "Cursor: Bibata-Modern-Classic"
 fi
 mkdir -p "$HOME/.icons/default"
-printf '[Icon Theme]\nInherits=WhiteSur-cursors\n' > "$HOME/.icons/default/index.theme"
-ok "Cursor: WhiteSur-cursors"
-DONE+=("Themes WhiteSur (GTK/Icons/Cursor)")
+printf '[Icon Theme]\nInherits=Bibata-Modern-Classic\n' > "$HOME/.icons/default/index.theme"
+DONE+=("Themes: Adwaita-dark, Papirus-Dark, Bibata")
 
 # ── 7. Configs verlinken ───────────────────────────────────
 step "Configs sichern & verlinken"
@@ -276,23 +292,72 @@ link_one() { # link_one <quelle> <ziel relativ zu $HOME>  – sichert Vorhandene
     ln -s "$src" "$dst"
     ok "verlinkt: ~/$rel"
 }
+# Aufräumen: Links früherer Rice-Versionen (wofi, mako, Dock)
+for rel in "${LEGACY_LINKS[@]}"; do
+    if [[ -L $HOME/$rel && "$(readlink "$HOME/$rel")" == "$REPO"/* ]]; then rm "$HOME/$rel"; info "alt entfernt: ~/$rel"; fi
+done
 for entry in "${LINKS[@]}"; do
     src="$REPO/${entry%%|*}"; src="${src%/.}"
     link_one "$src" "${entry#*|}"
 done
+# Links im Repo auf die generierten Farben (gitignored)
+for entry in "${GENERATED_LINKS[@]}"; do
+    ln -sfn "$HOME/${entry#*|}" "$REPO/${entry%%|*}"
+done
 [[ $backed -eq 1 ]] && DONE+=("Backup: $BACKUP") || true
 "$REPO/scripts/hypr-version.sh"
-PINNED="$HOME/.cache/nwg-dock-pinned"
-[[ -s $PINNED ]] || printf '%s\n' kitty firefox-bin thunar com.valvesoftware.Steam > "$PINNED"
-grep -qx firefox-bin "$PINNED" || sed -i '1a firefox-bin' "$PINNED"
 xdg-user-dirs-update >/dev/null 2>&1 || true
-gsettings set org.gnome.desktop.interface gtk-theme 'WhiteSur-Dark'         2>/dev/null || true
-gsettings set org.gnome.desktop.interface icon-theme 'WhiteSur-dark'        2>/dev/null || true
-gsettings set org.gnome.desktop.interface cursor-theme 'WhiteSur-cursors'   2>/dev/null || true
+gsettings set org.gnome.desktop.interface gtk-theme 'Adwaita-dark'          2>/dev/null || true
+gsettings set org.gnome.desktop.interface icon-theme 'Papirus-Dark'         2>/dev/null || true
+gsettings set org.gnome.desktop.interface cursor-theme 'Bibata-Modern-Classic' 2>/dev/null || true
 gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark'        2>/dev/null || true
-gsettings set org.gnome.desktop.interface font-name 'Inter 11'              2>/dev/null || true
+gsettings set org.gnome.desktop.interface font-name 'JetBrains Mono 10'     2>/dev/null || true
 gsettings set org.gnome.desktop.interface monospace-font-name 'JetBrains Mono 11' 2>/dev/null || true
 DONE+=("Configs verlinkt nach ~/.config")
+
+# ── 8. Wallpaper & Farben ──────────────────────────────────
+step "Wallpaper & dynamische Farben (pywal16)"
+export PATH="$HOME/.local/bin:$PATH"
+if command -v wal >/dev/null; then
+    ok "pywal16 vorhanden"
+elif command -v pipx >/dev/null && pipx install pywal16 >/dev/null 2>&1; then
+    ok "pywal16 installiert (pipx)"
+else
+    warn "pywal16 nicht installierbar – festes Fallback-Farbschema wird genutzt"; SKIPPED+=("pywal16")
+fi
+mkdir -p "$WALLPAPER_DIR"
+for f in "$REPO"/wallpapers/*.jpg; do
+    [[ -e $WALLPAPER_DIR/$(basename "$f") ]] || { cp "$f" "$WALLPAPER_DIR/"; info "Wallpaper: $(basename "$f")"; }
+done
+"$REPO/scripts/wallpaper.sh" init || die "Farbschema konnte nicht erzeugt werden."
+[[ -f $HOME/.cache/wal/colors-hyprland.conf ]] || die "~/.cache/wal/colors-hyprland.conf fehlt."
+ok "Farbschema aus $(basename "$(cat "$HOME/.cache/rice/wallpaper")")"
+
+# btop: Terminal-Farben (folgen pywal)
+BTOP="$HOME/.config/btop/btop.conf"; mkdir -p "$(dirname "$BTOP")"
+if [[ -f $BTOP ]]; then
+    sed -i -e 's/^color_theme *=.*/color_theme = "TTY"/' -e 's/^theme_background *=.*/theme_background = False/' "$BTOP"
+    grep -q '^color_theme' "$BTOP" || echo 'color_theme = "TTY"' >> "$BTOP"
+else
+    printf 'color_theme = "TTY"\ntheme_background = False\nrounded_corners = True\n' > "$BTOP"
+fi
+ok "btop: TTY-Theme (pywal-Farben)"
+
+# Songtext-Overlay (optional): sptlrx aus GitHub-Release
+if command -v sptlrx >/dev/null; then
+    ok "sptlrx vorhanden"
+else
+    url=$(curl -fsSL https://api.github.com/repos/raitonoberu/sptlrx/releases/latest 2>/dev/null |
+        grep -oE '"browser_download_url": *"[^"]+linux_(amd64|x86_64)[^"]*\.tar\.gz"' | head -n1 | grep -oE 'https[^"]+' || true)
+    tmp=$(mktemp -d)
+    if [[ -n $url ]] && curl -fsSL "$url" | tar -xz -C "$tmp" && [[ -f $tmp/sptlrx ]]; then
+        install -Dm755 "$tmp/sptlrx" "$HOME/.local/bin/sptlrx"; ok "sptlrx installiert (Songtexte, Super+Y)"
+    else
+        warn "sptlrx nicht installiert (optional)"; SKIPPED+=("sptlrx")
+    fi
+    rm -rf "$tmp"
+fi
+DONE+=("Wallpaper in ~/Pictures/wallpapers, Farben via pywal16")
 
 # ── 8. Firefox ─────────────────────────────────────────────
 step "Firefox (Binärversion)"
@@ -406,16 +471,21 @@ DONE+=("Mesa/Vulkan (RADV) für Radeon 780M")
 # ── 11. Gaming ─────────────────────────────────────────────
 step "Gaming: gamemode, mangohud, Flatpak, Steam"
 emerge_pkgs games-util/gamemode games-util/mangohud sys-apps/flatpak
+command -v flatpak >/dev/null || die "flatpak nicht verfügbar – Steam kann nicht installiert werden."
 flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
 ok "Flathub (user) eingerichtet"
-flatpak install --user -y --noninteractive flathub com.valvesoftware.Steam
+if flatpak info --user com.valvesoftware.Steam >/dev/null 2>&1; then
+    ok "Steam bereits installiert"
+else
+    flatpak install --user -y --noninteractive flathub com.valvesoftware.Steam || die "Steam-Flatpak konnte nicht installiert werden."
+fi
 RT=$(flatpak info --user com.valvesoftware.Steam 2>/dev/null | awk -F/ '/Runtime:/{print $NF}')
 if [[ -n $RT ]]; then
     flatpak install --user -y --noninteractive flathub "org.freedesktop.Platform.VulkanLayer.MangoHud//$RT" \
         && ok "MangoHud-Layer für Steam ($RT)" || warn "MangoHud-Flatpak-Layer nicht installiert"
 fi
-flatpak override --user --filesystem=xdg-config/MangoHud:ro com.valvesoftware.Steam
-ok "Steam installiert"
+flatpak override --user --filesystem=xdg-config/MangoHud:ro --talk-name=com.feralinteractive.GameMode com.valvesoftware.Steam
+ok "Steam installiert (Super+G)"
 DONE+=("gamemode, mangohud, Flatpak + Flathub, Steam")
 
 # ── Dev-Setup (optional) ───────────────────────────────────

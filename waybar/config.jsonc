@@ -1,68 +1,111 @@
+// Gentoo-rice – Waybar: drei schwebende Inseln
 {
     "layer": "top",
     "position": "top",
-    "height": 28,
-    "spacing": 4,
-    "margin-top": 0,
-    "modules-left": ["custom/menu", "hyprland/workspaces", "hyprland/window"],
-    "modules-center": [],
-    "modules-right": ["tray", "network", "pulseaudio", "cpu", "battery", "clock"],
+    "height": 34,
+    "margin-top": 8,
+    "margin-left": 10,
+    "margin-right": 10,
+    "spacing": 0,
+    "exclusive": true,
+    "modules-left":   ["custom/music", "custom/prev", "custom/play", "custom/next", "mpris"],
+    "modules-center": ["hyprland/workspaces"],
+    "modules-right":  ["cpu", "memory", "pulseaudio", "network", "bluetooth", "battery", "clock", "custom/power"],
 
-    "custom/menu": {
-        "format": "",
+    "custom/music": {
+        "format": "",
         "tooltip": false,
-        "on-click": "~/.local/share/gentoo-rice/scripts/powermenu.sh"
+        "on-click": "~/.local/share/gentoo-rice/scripts/lyrics.sh"
     },
+    "custom/prev": {
+        "format": "",
+        "exec": "echo prev",
+        "exec-if": "playerctl status",
+        "interval": 2,
+        "tooltip": false,
+        "on-click": "playerctl previous"
+    },
+    "custom/play": {
+        "exec": "s=$(playerctl status 2>/dev/null) || exit 1; [ \"$s\" = Playing ] && echo '' || echo ''",
+        "exec-if": "playerctl status",
+        "interval": 1,
+        "tooltip": false,
+        "on-click": "playerctl play-pause"
+    },
+    "custom/next": {
+        "format": "",
+        "exec": "echo next",
+        "exec-if": "playerctl status",
+        "interval": 2,
+        "tooltip": false,
+        "on-click": "playerctl next"
+    },
+    "mpris": {
+        "format": "{dynamic}",
+        "format-paused": "{dynamic}",
+        "format-stopped": "",
+        "dynamic-order": ["title", "artist"],
+        "dynamic-len": 40,
+        "dynamic-separator": " · ",
+        "on-click": "playerctl play-pause",
+        "tooltip-format": "{player}: {artist} – {title}"
+    },
+
     "hyprland/workspaces": {
-        "format": "{id}",
+        "format": "{icon}",
+        "format-icons": { "default": "", "active": "", "urgent": "" },
         "on-click": "activate",
         "persistent-workspaces": { "*": 5 },
-        "sort-by-number": true
+        "sort-by-number": true,
+        "on-scroll-up": "hyprctl dispatch workspace e-1",
+        "on-scroll-down": "hyprctl dispatch workspace e+1"
     },
-    "hyprland/window": {
-        "format": "{class}",
-        "max-length": 32,
-        "separate-outputs": true,
-        "rewrite": { "": "Schreibtisch" }
-    },
-    "tray": { "icon-size": 15, "spacing": 10 },
-    "network": {
-        "format-wifi": "",
-        "format-ethernet": "",
-        "format-disconnected": "",
-        "tooltip-format-wifi": "{essid} ({signalStrength}%)",
-        "tooltip-format-ethernet": "{ifname}: {ipaddr}",
-        "tooltip-format-disconnected": "Nicht verbunden",
-        "on-click": "kitty -e nmtui"
-    },
+
+    "cpu":    { "interval": 3, "format": " {usage}%", "tooltip": false, "on-click": "kitty --class rice-float btop" },
+    "memory": { "interval": 5, "format": " {percentage}%", "tooltip-format": "{used:0.1f} / {total:0.1f} GiB" },
     "pulseaudio": {
-        "format": "{icon}",
-        "format-muted": "",
+        "format": "{icon} {volume}%",
+        "format-muted": " --",
         "format-icons": { "default": ["", "", ""] },
-        "tooltip-format": "Lautstärke {volume}%",
         "scroll-step": 5,
         "on-click": "pavucontrol",
         "on-click-right": "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"
     },
-    "cpu": {
-        "interval": 3,
-        "format": "  {usage}%",
-        "tooltip": false
+    "network": {
+        "format-wifi": "",
+        "format-ethernet": "",
+        "format-disconnected": "",
+        "tooltip-format-wifi": "{essid} ({signalStrength}%)",
+        "tooltip-format-ethernet": "{ifname}: {ipaddr}",
+        "tooltip-format-disconnected": "Nicht verbunden",
+        "on-click": "kitty --class rice-float nmtui"
+    },
+    "bluetooth": {
+        "format": "",
+        "format-disabled": "",
+        "format-off": "",
+        "format-connected": " {num_connections}",
+        "tooltip-format-connected": "{device_enumerate}",
+        "tooltip-format-enumerate-connected": "{device_alias}",
+        "on-click": "blueman-manager"
     },
     "battery": {
         "states": { "warning": 25, "critical": 12 },
-        "format": "{icon}  {capacity}%",
-        "format-charging": "  {capacity}%",
+        "format": "{icon} {capacity}%",
+        "format-charging": " {capacity}%",
         "format-icons": ["", "", "", "", ""]
     },
     "clock": {
         "locale": "de_DE.UTF-8",
         "interval": 10,
-        "format": "{:%a %-d. %b %H:%M}",
+        "format": "{:%H:%M}",
+        "format-alt": "{:%a %-d. %b  %H:%M}",
         "tooltip-format": "<tt>{calendar}</tt>",
-        "calendar": {
-            "mode": "month",
-            "format": { "today": "<span color='#0A84FF'><b>{}</b></span>" }
-        }
+        "calendar": { "mode": "month", "format": { "today": "<b><u>{}</u></b>" } }
+    },
+    "custom/power": {
+        "format": "",
+        "tooltip": false,
+        "on-click": "~/.local/share/gentoo-rice/scripts/powermenu.sh"
     }
 }

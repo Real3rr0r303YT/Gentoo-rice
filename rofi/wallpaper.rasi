@@ -1,0 +1,55 @@
+/* Gentoo-rice – Wallpaper-Picker (horizontale Leiste unten) */
+configuration { show-icons: true; hover-select: true; me-select-entry: ""; me-accept-entry: "MousePrimary"; }
+
+@import "~/.cache/wal/colors-rice.rasi"
+
+* {
+    font: "JetBrains Mono 9";
+    background-color: transparent;
+    text-color: @fg;
+}
+
+window {
+    location: south;
+    anchor: south;
+    width: 96%;
+    y-offset: -14px;
+    border: 2px;
+    border-color: @accent;
+    border-radius: 12px;
+    background-color: @bg;
+}
+
+mainbox { padding: 12px; spacing: 10px; children: [ "inputbar", "listview" ]; }
+
+inputbar {
+    padding: 6px 12px;
+    border-radius: 8px;
+    background-color: @surface;
+    children: [ "prompt", "entry" ];
+    spacing: 8px;
+}
+prompt { text-color: @accent; }
+entry { placeholder: "Wallpaper suchen…"; placeholder-color: @muted; }
+
+listview {
+    columns: 6;
+    lines: 1;
+    flow: horizontal;
+    fixed-columns: true;
+    spacing: 10px;
+    scrollbar: false;
+    cycle: true;
+}
+
+element {
+    orientation: vertical;
+    padding: 6px;
+    spacing: 6px;
+    border-radius: 10px;
+    border: 2px;
+    border-color: transparent;
+}
+element selected.normal { border-color: @accent; background-color: @surface; }
+element-icon { size: 210px; border-radius: 8px; horizontal-align: 0.5; }
+element-text { horizontal-align: 0.5; text-color: inherit; }

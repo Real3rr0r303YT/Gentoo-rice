@@ -1,0 +1,10 @@
+/* pywal16 → rofi */
+* {{
+    bg:       {background}C7;
+    bg-solid: {background};
+    fg:       {foreground};
+    accent:   {color4};
+    accent2:  {color5};
+    muted:    {color8};
+    surface:  {color0}99;
+}}

@@ -1,0 +1,51 @@
+/* Gentoo-rice – Launcher */
+configuration {
+    modi: "drun,run,window";
+    show-icons: true;
+    icon-theme: "Papirus-Dark";
+    drun-display-format: "{name}";
+    display-drun: "";
+    display-run: "";
+    display-window: "";
+    disable-history: false;
+    hover-select: true;
+    me-select-entry: "";
+    me-accept-entry: "MousePrimary";
+}
+
+@import "~/.cache/wal/colors-rice.rasi"
+
+* {
+    font: "JetBrains Mono 11";
+    background-color: transparent;
+    text-color: @fg;
+}
+
+window {
+    location: center;
+    anchor: center;
+    width: 560px;
+    border: 2px;
+    border-color: @accent;
+    border-radius: 10px;
+    background-color: @bg;
+}
+
+mainbox { padding: 14px; spacing: 12px; children: [ "inputbar", "listview" ]; }
+
+inputbar {
+    padding: 10px 14px;
+    spacing: 10px;
+    border-radius: 8px;
+    background-color: @surface;
+    children: [ "prompt", "entry" ];
+}
+prompt { text-color: @accent; }
+entry { placeholder: "Suchen…"; placeholder-color: @muted; }
+
+listview { lines: 8; columns: 1; spacing: 4px; scrollbar: false; fixed-height: false; }
+
+element { padding: 8px 12px; spacing: 12px; border-radius: 8px; }
+element selected.normal { background-color: @accent; text-color: @bg-solid; }
+element-icon { size: 24px; }
+element-text { vertical-align: 0.5; text-color: inherit; }

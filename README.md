@@ -2,33 +2,26 @@
 
 🇬🇧 **English** · 🇩🇪 [Deutsch](README.de.md)
 
-A clean, minimal Hyprland rice for **Gentoo (OpenRC)** – dark, calm, lots of blur.
+Wallpaper-driven **anime / lofi** Hyprland rice for **Gentoo (OpenRC)** – every color comes from your current wallpaper.
 
-![Screenshot](screenshots/desktop.png)
-<!-- Screenshot placeholder: put screenshots/desktop.png here -->
+| Desktop | Wallpaper picker | Terminal toys |
+|---|---|---|
+| ![Desktop](screenshots/desktop.png) | ![Picker](screenshots/picker.png) | ![Toys](screenshots/toys.png) |
+
+<!-- Screenshot placeholders: put desktop.png, picker.png, toys.png into screenshots/ -->
 
 ## Features
 
-- **Hyprland** – 14px rounding, soft shadows, strong blur, 8px gaps, ease-out animations
-- **Waybar** as a slim, translucent menu bar (workspaces · Wi-Fi · audio · CPU · battery · clock)
-- **Dock** bottom center (nwg-dock-hyprland), auto-hide, rounded, blur
-- **Wofi** as a centered spotlight-style launcher
-- **Mako** notifications top right
-- **hyprlock + hypridle** in the same style
-- **Kitty** with JetBrains Mono, **Inter** as UI font
-- **fastfetch** with Gentoo logo in the rice look, runs when Kitty opens
-- **Firefox** (`firefox-bin`) as default browser: native Wayland, dark & compact, rounded tabs (`userChrome.css`), telemetry off, strict tracking protection, uBlock Origin
-- **WhiteSur** GTK, icon and cursor theme
-- Self-generated gradient wallpaper (`scripts/gen-wallpaper.sh`)
-- **Gaming:** Mesa/RADV for Radeon 780M, Flatpak + Flathub, Steam, gamemode, MangoHud
-
-| Color | Value |
-|---|---|
-| Background | `#1C1C1E` |
-| Surfaces | `#2C2C2E` |
-| Text | `#F5F5F7` |
-| Accent | `#0A84FF` |
-| Lines | `rgba(255,255,255,0.08)` |
+- **Dynamic colors** with pywal16: Hyprland borders, Waybar, kitty, rofi, mako, cava, btop, fastfetch and hyprlock are re-themed on every wallpaper change
+- **Hyprland** – translucent windows, strong blur, 10px rounding, thin accent border (gradient), 10px gaps, popin/slide animations
+- **Waybar** as three floating islands:
+  left media player (prev/play/next + title via playerctl) · center workspace pills (active one wider in accent color) · right CPU, RAM, volume, Wi-Fi, Bluetooth, battery, clock, power
+- **Wallpapers:** images via swww/awww with transition, videos via mpvpaper
+- **Wallpaper picker** (`Super + W`): horizontal bar at the bottom with cached ffmpeg thumbnails, videos marked with a **VIDEO** badge
+- **Terminal toys** as floating windows: cava, btop, cmatrix, tty-clock, fastfetch (Gentoo logo), lyrics overlay (sptlrx)
+- **hyprlock** in the same dynamic colors, shows the current song
+- **Firefox**, rofi launcher, mako notifications, Papirus icons, Bibata cursor
+- **Gaming:** Mesa/RADV for Radeon 780M, Vulkan tools, Flatpak + Flathub, Steam (Flatpak), gamemode, MangoHud (native + Flatpak layer); Steam and games without blur/transparency, games fullscreen with tearing for low latency
 
 ## Installation
 
@@ -37,12 +30,25 @@ git clone https://github.com/Real3rr0r303YT/Gentoo-rice && cd Gentoo-rice && ./i
 ```
 
 Run as a normal user – `sudo`/`doas` is only used for system steps.
-The script can be run repeatedly. Existing configs are backed up to
-`~/.config-backup/gentoo-rice/<date>/`.
+The script can be run repeatedly; unavailable packages are reported and skipped.
+Existing configs are backed up to `~/.config-backup/gentoo-rice/<date>/`.
 
 Reboot afterwards and log in on **TTY1** → Hyprland starts automatically.
 
-Steam launch options for games: `gamemoderun mangohud %command%`
+### Wallpapers
+
+Put images (`jpg png webp gif`) or videos (`mp4 mkv webm mov`) into **`~/Pictures/wallpapers`**.
+Only three self-generated gradient placeholders ship with the repo – no third-party images.
+
+```sh
+~/.local/share/gentoo-rice/scripts/wallpaper.sh set <file>   # set + regenerate colors
+~/.local/share/gentoo-rice/scripts/wallpaper.sh random
+~/.local/share/gentoo-rice/scripts/gen-wallpaper.sh 2880x1800 # new gradient placeholder
+```
+
+### Steam
+
+`Super + G` opens Steam. Launch options for games: `gamemoderun mangohud %command%`
 
 ### Uninstall
 
@@ -50,14 +56,14 @@ Steam launch options for games: `gamemoderun mangohud %command%`
 ./uninstall.sh
 ```
 
-Removes the symlinks (including fastfetch and the Firefox profile files), the autostart, the fastfetch entry in `~/.bashrc` and the Firefox policies, then restores the backup.
+Removes all symlinks (including old wofi/mako/dock links, fastfetch, Firefox profile files), the autostart, the fastfetch entry in `~/.bashrc`, the Firefox policies, the placeholder wallpapers and the thumbnail cache, then restores the backup.
 
 ## Firefox
 
 - Installs `www-client/firefox-bin` (no compiling) and sets it as default browser (`xdg-mime`/`xdg-settings` for http, https, HTML)
 - `firefox/user.js` + `firefox/userChrome.css` are linked into the default profile (created headless if missing)
 - `firefox/policies.json` → `/etc/firefox/policies/` and `/opt/firefox/distribution/`: telemetry off, strict tracking protection, uBlock Origin installed automatically
-- Pinned to the dock, `Super + B` opens Firefox
+- `Super + B` opens Firefox (always opaque)
 
 ## Dev setup
 
@@ -86,10 +92,19 @@ A summary of installed versions is printed at the end.
 
 | Key | Action |
 |---|---|
-| `Super + Enter` | Terminal (Kitty) |
-| `Super + Space` | Launcher |
-| `Super + E` | File manager |
+| `Super + Enter` | Terminal (kitty) |
+| `Super + Space` | Launcher (rofi) |
+| `Super + W` | Wallpaper picker |
+| `Super + Shift + W` | Random wallpaper |
 | `Super + B` | Firefox |
+| `Super + G` | Steam |
+| `Super + E` | File manager |
+| `Super + A` | cava (audio visualizer) |
+| `Super + T` | btop |
+| `Super + M` | cmatrix |
+| `Super + C` | tty-clock |
+| `Super + I` | fastfetch |
+| `Super + Y` | Lyrics overlay (toggle) |
 | `Super + Q` | Close window |
 | `Super + F` | Fullscreen |
 | `Super + V` | Toggle floating |
@@ -104,26 +119,24 @@ A summary of installed versions is printed at the end.
 | `Super + Shift + Arrow keys` | Move window |
 | `Super + Mouse wheel` | Switch workspace |
 | `Super + LMB / RMB` | Move / resize window |
-| `Print` | Screenshot (area) |
-| `Shift + Print` | Screenshot (screen) |
-| Media keys | Volume / brightness |
+| `Print` / `Shift + Print` | Screenshot area / screen |
+| Media keys | Volume, brightness, play/pause, next/previous |
 | 3-finger swipe | Switch workspace (Hyprland ≥ 0.53) |
 
 ## Structure
 
 ```
-hypr/        hyprland.conf, hyprlock.conf, hypridle.conf, compat/
-waybar/      config.jsonc, style.css
-kitty/       kitty.conf
-wofi/        config, style.css
-mako/        config
-gtk/         gtk-3.0 / gtk-4.0 settings.ini
-nwg-dock-hyprland/  style.css
-wallpapers/  gradient.png
-vscode/      settings.json, code-flags.conf
+hypr/        hyprland.conf, hyprlock.conf, hypridle.conf, compat/ (rules per Hyprland version)
+waybar/      config.jsonc, style.css (colors.css → generated)
+kitty/       kitty.conf (colors-wal.conf → generated)
+rofi/        config.rasi (launcher), wallpaper.rasi (picker), menu.rasi
+wal/         templates/ for pywal16 (Hyprland, Waybar, rofi, mako, cava)
 fastfetch/   config.jsonc
 firefox/     user.js, userChrome.css, policies.json
-scripts/     helper scripts
+gtk/         gtk-3.0 / gtk-4.0 settings.ini
+vscode/      settings.json, code-flags.conf
+wallpapers/  3 generated gradient placeholders
+scripts/     wallpaper.sh, wallpaper-picker.sh, lyrics.sh, powermenu.sh, dev-setup.sh, …
 ```
 
 ## Support
@@ -136,4 +149,4 @@ Copyright © 2026 3rr0r303YT
 
 This project is licensed under the **GNU General Public License v3.0** – see [LICENSE](LICENSE).
 You may use, modify and redistribute it as long as derivative works are also licensed under GPL-3.0.
-The WhiteSur themes are downloaded from their original repositories at install time and are subject to their own licenses.
+Bibata cursors and sptlrx are downloaded from their original releases at install time and are subject to their own licenses.

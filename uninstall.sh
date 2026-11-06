@@ -16,6 +16,7 @@ trap 'printf "%s✘ Fehler bei: %s%s\n" "$R$B" "$BASH_COMMAND" "$N" >&2' ERR
 # Alle verwalteten Pfade (relativ zu $HOME): feste Links + dynamische (Firefox-Profil)
 RELS=()
 for entry in "${LINKS[@]}"; do RELS+=("${entry#*|}"); done
+RELS+=("${LEGACY_LINKS[@]}")
 if [[ -f $EXTRA_LINKS_FILE ]]; then
     while IFS= read -r rel; do [[ -n $rel ]] && RELS+=("$rel"); done < "$EXTRA_LINKS_FILE"
 fi
@@ -27,7 +28,8 @@ for rel in "${RELS[@]}"; do
         rm "$dst"; ok "entfernt: ~/$rel"
     fi
 done
-rm -f "$HOME/.config/hypr/version.conf" 2>/dev/null || true
+rm -f "$REPO/hypr/version.conf" 2>/dev/null || true
+for entry in "${GENERATED_LINKS[@]}"; do rm -f "$REPO/${entry%%|*}"; done
 
 printf '%sBackup zurückspielen%s\n' "$B" "$N"
 if [[ -d $BACKUP_ROOT ]]; then
@@ -75,8 +77,18 @@ for f in /etc/firefox/policies/policies.json /opt/firefox/distribution/policies.
     fi
 done
 
-if [[ -f $HOME/.icons/default/index.theme ]] && grep -q 'WhiteSur-cursors' "$HOME/.icons/default/index.theme"; then
+printf '%sWallpaper & Cache%s\n' "$B" "$N"
+pkill -x mpvpaper 2>/dev/null || true
+for f in "$REPO"/wallpapers/*.jpg; do
+    w="$WALLPAPER_DIR/$(basename "$f")"
+    if [[ -f $w ]] && cmp -s "$f" "$w"; then rm "$w"; ok "Platzhalter entfernt: ${w/#$HOME/\~}"; fi
+done
+rmdir "$WALLPAPER_DIR" 2>/dev/null || true
+rm -rf "$HOME/.cache/rice" && ok "~/.cache/rice (Thumbnails) entfernt"
+[[ -f $HOME/.config/btop/btop.conf ]] && sed -i 's/^color_theme *=.*/color_theme = "Default"/' "$HOME/.config/btop/btop.conf" || true
+
+if [[ -f $HOME/.icons/default/index.theme ]] && grep -qE 'WhiteSur-cursors|Bibata-Modern-Classic' "$HOME/.icons/default/index.theme"; then
     rm "$HOME/.icons/default/index.theme"; ok "Cursor-Default entfernt"
 fi
 
-printf '\n%sFertig.%s Pakete, Themes (~/.themes, ~/.local/share/icons), Standardbrowser und /etc/portage/*/gentoo-rice bleiben erhalten.\n' "$G$B" "$N"
+printf '\n%sFertig.%s Pakete, Steam, pywal16 (~/.cache/wal), Themes, eigene Wallpaper, Standardbrowser und /etc/portage/*/gentoo-rice bleiben erhalten.\n' "$G$B" "$N"

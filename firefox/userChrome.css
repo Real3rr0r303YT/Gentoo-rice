@@ -1,0 +1,79 @@
+/* Gentoo-rice – Firefox userChrome.css */
+:root {
+    --rice-bg: #1C1C1E;
+    --rice-surface: #2C2C2E;
+    --rice-hover: #3A3A3C;
+    --rice-text: #F5F5F7;
+    --rice-muted: #8E8E93;
+    --rice-accent: #0A84FF;
+    --rice-line: rgba(255, 255, 255, 0.08);
+
+    --toolbar-bgcolor: var(--rice-bg) !important;
+    --toolbar-color: var(--rice-text) !important;
+    --lwt-accent-color: var(--rice-bg) !important;
+    --lwt-text-color: var(--rice-text) !important;
+    --tab-selected-bgcolor: var(--rice-surface) !important;
+    --tab-selected-textcolor: var(--rice-text) !important;
+    --toolbar-field-background-color: var(--rice-surface) !important;
+    --toolbar-field-focus-background-color: var(--rice-surface) !important;
+    --toolbar-field-color: var(--rice-text) !important;
+    --toolbar-field-focus-border-color: var(--rice-accent) !important;
+    --focus-outline-color: var(--rice-accent) !important;
+    --arrowpanel-background: var(--rice-surface) !important;
+    --arrowpanel-color: var(--rice-text) !important;
+    --arrowpanel-border-color: var(--rice-line) !important;
+    --arrowpanel-border-radius: 12px !important;
+    --toolbarbutton-border-radius: 8px !important;
+    --toolbarbutton-hover-background: var(--rice-hover) !important;
+    --chrome-content-separator-color: var(--rice-line) !important;
+    --tab-border-radius: 10px !important;
+    --tab-min-height: 30px !important;
+    --tab-block-margin: 4px !important;
+    --urlbar-min-height: 30px !important;
+}
+
+#navigator-toolbox {
+    background: var(--rice-bg) !important;
+    border-bottom: 1px solid var(--rice-line) !important;
+}
+#nav-bar, #PersonalToolbar, #TabsToolbar { background: transparent !important; }
+
+/* Abgerundete Tabs */
+.tab-background {
+    border-radius: 10px !important;
+    margin-block: 4px !important;
+}
+.tabbrowser-tab:hover > .tab-stack > .tab-background:not([selected]) {
+    background: var(--rice-hover) !important;
+}
+.tab-background[selected] {
+    background: var(--rice-surface) !important;
+    box-shadow: 0 0 0 1px var(--rice-line), 0 2px 8px rgba(0, 0, 0, 0.35) !important;
+}
+.tabbrowser-tab:not([selected]) .tab-label { color: var(--rice-muted) !important; }
+.tabbrowser-tab::after, .tabbrowser-tab::before { border: none !important; }
+.tab-context-line { background: var(--rice-accent) !important; border-radius: 2px !important; }
+
+/* Adressleiste */
+#urlbar-background {
+    border-radius: 10px !important;
+    border: 1px solid var(--rice-line) !important;
+    background: var(--rice-surface) !important;
+    box-shadow: none !important;
+}
+#urlbar[focused] > #urlbar-background {
+    outline: 2px solid var(--rice-accent) !important;
+    outline-offset: -1px !important;
+}
+#urlbar[open] > #urlbar-background { border-radius: 12px !important; }
+
+/* Kompakt, ohne Fensterknöpfe (Tiling) */
+.titlebar-buttonbox-container,
+.titlebar-spacer[type="pre-tabs"],
+.titlebar-spacer[type="post-tabs"] { display: none !important; }
+
+/* Akzent */
+#downloads-button[attention] .toolbarbutton-icon,
+.urlbarView-row[selected] { fill: var(--rice-accent) !important; }
+.urlbarView-row[selected] > .urlbarView-row-inner { background: var(--rice-accent) !important; color: #FFFFFF !important; border-radius: 8px !important; }
+menupopup, panel { --panel-border-radius: 12px !important; }

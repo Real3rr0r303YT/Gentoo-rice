@@ -1,0 +1,22 @@
+window { background: transparent; }
+
+#box {
+    background: rgba(44, 44, 46, 0.55);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 20px;
+    padding: 6px 8px;
+}
+
+button {
+    background: transparent;
+    border: none;
+    border-radius: 12px;
+    padding: 4px;
+    margin: 0 2px;
+    color: #F5F5F7;
+    box-shadow: none;
+}
+button:hover { background: rgba(255, 255, 255, 0.10); }
+button:focus { box-shadow: none; }
+
+#active { border-bottom: 2px solid rgba(245, 245, 247, 0.8); border-radius: 12px 12px 4px 4px; }

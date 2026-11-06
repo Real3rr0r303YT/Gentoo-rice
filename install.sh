@@ -6,17 +6,20 @@ set -Eeuo pipefail
 
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-DEV=0 WE=0 DRY_RUN=0 CLAUDE=1
+DEV=0 WE=0 DRY_RUN=0 CLAUDE=1 LOGIN=0 LOGIN_THEME=gentoo-rice
 for arg in "$@"; do
     case $arg in
         --dev)     DEV=1 ;;
         --we)      WE=1 ;;
         --dry-run) DRY_RUN=1 ;;
         --no-claude) CLAUDE=0 ;;
+        --login|--login=default|--login=gentoo-rice) LOGIN=1 LOGIN_THEME=gentoo-rice ;;
+        --login=minecraft|--login=blocks) LOGIN=1 LOGIN_THEME=gentoo-rice-blocks ;;
         -h|--help)
-            printf 'Nutzung: ./install.sh [--dev] [--we] [--no-claude] [--dry-run]\n'
+            printf 'Nutzung: ./install.sh [--dev] [--we] [--login[=minecraft]] [--no-claude] [--dry-run]\n'
             printf '  --dev      zusätzlich Entwickler-Setup (scripts/dev-setup.sh)\n'
             printf '  --we       zusätzlich Wallpaper Engine (scripts/wallpaperengine.sh)\n'
+            printf '  --login    grafischer Login-Screen (SDDM, Wayland); --login=minecraft für den Klötzchen-Look\n'
             printf '  --no-claude  Claude Code nicht installieren\n'
             printf '  --dry-run  nur anzeigen, was installiert/geändert würde (keine Änderungen)\n'
             exit 0 ;;
@@ -24,7 +27,7 @@ for arg in "$@"; do
     esac
 done
 
-TOTAL=$((14 + CLAUDE + DEV + WE))
+TOTAL=$((14 + CLAUDE + LOGIN + DEV + WE))
 KW_FILE=/etc/portage/package.accept_keywords/gentoo-rice-auto
 # shellcheck source=scripts/links.sh
 source "$REPO/scripts/links.sh"
@@ -178,6 +181,7 @@ dry_run() {
     info "Themes: Standard lofi (Farben aus dem Wallpaper), Wechsel mit Super+Shift+T"
     info "Autostart: Hyprland auf TTY1 (~/.bash_profile), fastfetch in kitty (~/.bashrc)"
     if ((CLAUDE)); then info "Claude Code: nativer Installer (claude.ai/install.sh), PATH in ~/.bashrc, Super+K"; fi
+    if ((LOGIN)); then info "Login-Screen: SDDM (Wayland/Weston), Theme $LOGIN_THEME, display-manager im Runlevel default, TTY1-Autostart entfällt"; fi
     if ((DEV)); then info "Dev-Setup: scripts/dev-setup.sh"; fi
     if ((WE)); then info "Wallpaper Engine: scripts/wallpaperengine.sh"; fi
 
@@ -451,21 +455,20 @@ DONE+=("PipeWire/WirePlumber")
 
 # ── 9. Autostart ───────────────────────────────────────────
 step "Hyprland-Autostart auf TTY1"
-SNIPPET="$PROFILE_BEGIN
-if [ -z \"\${WAYLAND_DISPLAY:-}\" ] && [ \"\$(tty)\" = \"/dev/tty1\" ]; then
-    if command -v start-hyprland >/dev/null 2>&1; then exec dbus-run-session start-hyprland
-    else exec dbus-run-session Hyprland; fi
+if [[ $LOGIN -eq 1 || -f $LOGIN_MARKER ]]; then
+    # Login-Screen übernimmt den Start – TTY1-Autostart würde Hyprland doppelt starten
+    info "Login-Screen aktiv – kein TTY1-Autostart"
+else
+    for prof in "$HOME/.bash_profile" "$HOME/.zprofile"; do
+        [[ $prof == *zprofile && ! -f $prof ]] && continue
+        touch "$prof"
+        if grep -qF "$PROFILE_BEGIN" "$prof"; then
+            sed -i "/$PROFILE_BEGIN/,/$PROFILE_END/d" "$prof"
+        fi
+        printf '\n%s\n' "$PROFILE_SNIPPET" >> "$prof"
+        ok "Autostart in ${prof/#$HOME/\~}"
+    done
 fi
-$PROFILE_END"
-for prof in "$HOME/.bash_profile" "$HOME/.zprofile"; do
-    [[ $prof == *zprofile && ! -f $prof ]] && continue
-    touch "$prof"
-    if grep -qF "$PROFILE_BEGIN" "$prof"; then
-        sed -i "/$PROFILE_BEGIN/,/$PROFILE_END/d" "$prof"
-    fi
-    printf '\n%s\n' "$SNIPPET" >> "$prof"
-    ok "Autostart in ${prof/#$HOME/\~}"
-done
 touch "$HOME/.bashrc"
 grep -qF "$FASTFETCH_BEGIN" "$HOME/.bashrc" && sed -i "/$FASTFETCH_BEGIN/,/$FASTFETCH_END/d" "$HOME/.bashrc"
 cat >> "$HOME/.bashrc" <<EOF
@@ -551,6 +554,21 @@ if [[ $CLAUDE -eq 1 ]]; then
     else
         printf '%s\n' "$out" >> "$LOG"
         warn "Claude Code konnte nicht installiert werden"; FAILED+=("Claude Code (einzeln: ./scripts/install-claude-code.sh)")
+    fi
+fi
+
+# ── Login-Screen (optional) ────────────────────────────────
+if [[ $LOGIN -eq 1 ]]; then
+    step "Login-Screen (SDDM)"
+    if "$REPO/scripts/login-screen.sh" --theme "$LOGIN_THEME"; then
+        DONE+=("Login-Screen: SDDM mit Theme $LOGIN_THEME (Notausgang: Strg+Alt+F2 → sudo rc-update del display-manager)")
+    else
+        warn "Login-Screen-Einrichtung fehlgeschlagen – TTY1-Autostart wird wieder eingetragen"
+        FAILED+=("Login-Screen (einzeln: ./scripts/login-screen.sh)")
+        if [[ ! -f $LOGIN_MARKER ]] && ! grep -qF "$PROFILE_BEGIN" "$HOME/.bash_profile" 2>/dev/null; then
+            printf '\n%s\n' "$PROFILE_SNIPPET" >> "$HOME/.bash_profile"
+            ok "TTY1-Autostart in ~/.bash_profile"
+        fi
     fi
 fi
 

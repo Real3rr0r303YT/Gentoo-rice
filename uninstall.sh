@@ -3,7 +3,7 @@
 # Copyright (C) 2026 3rr0r303YT – GPL-3.0-or-later
 set -Eeuo pipefail
 
-REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 # shellcheck source=scripts/links.sh
 source "$REPO/scripts/links.sh"
 
@@ -13,12 +13,18 @@ warn() { printf '  %s!%s %s\n' "$Y" "$N" "$*"; }
 trap 'printf "%s✘ Fehler bei: %s%s\n" "$R$B" "$BASH_COMMAND" "$N" >&2' ERR
 [[ $EUID -ne 0 ]] || { echo "Bitte als normaler Benutzer starten."; exit 1; }
 
+# Alle verwalteten Pfade (relativ zu $HOME): feste Links + dynamische (Firefox-Profil)
+RELS=()
+for entry in "${LINKS[@]}"; do RELS+=("${entry#*|}"); done
+if [[ -f $EXTRA_LINKS_FILE ]]; then
+    while IFS= read -r rel; do [[ -n $rel ]] && RELS+=("$rel"); done < "$EXTRA_LINKS_FILE"
+fi
+
 printf '%sSymlinks entfernen%s\n' "$B" "$N"
-for entry in "${LINKS[@]}"; do
-    src="$REPO/${entry%%|*}"; src="${src%/.}"
-    dst="$HOME/${entry#*|}"
-    if [[ -L $dst && "$(readlink -f "$dst")" == "$(readlink -f "$src")" ]]; then
-        rm "$dst"; ok "entfernt: ~/${entry#*|}"
+for rel in "${RELS[@]}"; do
+    dst="$HOME/$rel"
+    if [[ -L $dst && "$(readlink -f "$dst")" == "$REPO"/* || -L $dst && "$(readlink -f "$dst")" == "$REPO" ]]; then
+        rm "$dst"; ok "entfernt: ~/$rel"
     fi
 done
 rm -f "$HOME/.config/hypr/version.conf" 2>/dev/null || true
@@ -27,8 +33,7 @@ printf '%sBackup zurückspielen%s\n' "$B" "$N"
 if [[ -d $BACKUP_ROOT ]]; then
     # ältestes Backup zuerst = Originalzustand vor der ersten Installation
     while IFS= read -r dir; do
-        for entry in "${LINKS[@]}"; do
-            rel="${entry#*|}"
+        for rel in "${RELS[@]}"; do
             if [[ -e $dir/$rel || -L $dir/$rel ]]; then
                 if [[ -e $HOME/$rel || -L $HOME/$rel ]]; then
                     warn "existiert bereits, übersprungen: ~/$rel (Backup bleibt in $dir)"
@@ -51,8 +56,27 @@ for prof in "$HOME/.bash_profile" "$HOME/.zprofile"; do
         sed -i "/$PROFILE_BEGIN/,/$PROFILE_END/d" "$prof"; ok "${prof/#$HOME/\~}"
     fi
 done
+if [[ -f $HOME/.bashrc ]] && grep -qF "$FASTFETCH_BEGIN" "$HOME/.bashrc"; then
+    sed -i "/$FASTFETCH_BEGIN/,/$FASTFETCH_END/d" "$HOME/.bashrc"; ok "fastfetch-Autostart aus ~/.bashrc"
+fi
+rm -f "$EXTRA_LINKS_FILE"
+PINNED="$HOME/.cache/nwg-dock-pinned"
+[[ -f $PINNED ]] && sed -i '/^firefox-bin$/d' "$PINNED" && ok "Firefox aus Dock entfernt"
+
+printf '%sFirefox-Policies entfernen%s\n' "$B" "$N"
+SUDO=; command -v sudo >/dev/null && SUDO=sudo || { command -v doas >/dev/null && SUDO=doas; }
+for f in /etc/firefox/policies/policies.json /opt/firefox/distribution/policies.json; do
+    [[ -f $f ]] && cmp -s "$f" "$REPO/firefox/policies.json" || continue
+    if [[ $f == /opt/* ]]; then
+        printf '{\n    "policies": {\n        "DisableAppUpdate": true\n    }\n}\n' | $SUDO tee "$f" >/dev/null \
+            && ok "zurückgesetzt: $f" || warn "nicht änderbar: $f"
+    else
+        $SUDO rm -f "$f" && ok "entfernt: $f" || warn "nicht entfernbar: $f"
+    fi
+done
+
 if [[ -f $HOME/.icons/default/index.theme ]] && grep -q 'WhiteSur-cursors' "$HOME/.icons/default/index.theme"; then
     rm "$HOME/.icons/default/index.theme"; ok "Cursor-Default entfernt"
 fi
 
-printf '\n%sFertig.%s Pakete, Themes (~/.themes, ~/.local/share/icons) und /etc/portage/*/gentoo-rice bleiben erhalten.\n' "$G$B" "$N"
+printf '\n%sFertig.%s Pakete, Themes (~/.themes, ~/.local/share/icons), Standardbrowser und /etc/portage/*/gentoo-rice bleiben erhalten.\n' "$G$B" "$N"

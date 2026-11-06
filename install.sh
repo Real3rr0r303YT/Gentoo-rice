@@ -23,7 +23,7 @@ if [[ -t 1 ]]; then
 else
     B=; D=; R=; G=; Y=; C=; N=
 fi
-TOTAL=$((12 + DEV)); STEP=0; CURRENT="Start"
+TOTAL=$((13 + DEV)); STEP=0; CURRENT="Start"
 DONE=()
 step() { STEP=$((STEP + 1)); CURRENT="$*"; printf '\n%s[%2d/%d]%s %s%s%s\n' "$C$B" "$STEP" "$TOTAL" "$N" "$B" "$*" "$N"; }
 info() { printf '  %s•%s %s\n' "$D" "$N" "$*"; }
@@ -207,7 +207,7 @@ PKGS_DESKTOP=(
     gui-wm/hyprland gui-apps/hyprlock gui-apps/hypridle
     gui-libs/xdg-desktop-portal-hyprland sys-apps/xdg-desktop-portal-gtk
     gui-apps/waybar gui-apps/wofi gui-apps/mako gui-apps/swaybg
-    gui-apps/nwg-dock-hyprland x11-terms/kitty
+    gui-apps/nwg-dock-hyprland x11-terms/kitty app-misc/fastfetch x11-misc/xdg-utils
     gui-apps/grim gui-apps/slurp gui-apps/wl-clipboard
     app-misc/brightnessctl x11-libs/libnotify x11-misc/xdg-user-dirs
     gnome-base/dconf media-gfx/imagemagick dev-lang/sassc
@@ -262,25 +262,29 @@ step "Configs sichern & verlinken"
 STAMP=$(date +%Y-%m-%d_%H-%M-%S)
 BACKUP="$BACKUP_ROOT/$STAMP"
 backed=0
-for entry in "${LINKS[@]}"; do
-    src="$REPO/${entry%%|*}"; src="${src%/.}"
-    dst="$HOME/${entry#*|}"
+link_one() { # link_one <quelle> <ziel relativ zu $HOME>  – sichert Vorhandenes, dann Symlink
+    local src=$1 rel=$2 dst="$HOME/$2"
     if [[ -L $dst && "$(readlink -f "$dst")" == "$(readlink -f "$src")" ]]; then
-        info "ok: ~/${entry#*|}"; continue
+        info "ok: ~/$rel"; return 0
     fi
     if [[ -e $dst || -L $dst ]]; then
-        mkdir -p "$BACKUP/$(dirname "${entry#*|}")"
-        mv "$dst" "$BACKUP/${entry#*|}"
-        backed=1; info "gesichert: ~/${entry#*|}"
+        mkdir -p "$BACKUP/$(dirname "$rel")"
+        mv "$dst" "$BACKUP/$rel"
+        backed=1; info "gesichert: ~/$rel"
     fi
     mkdir -p "$(dirname "$dst")"
     ln -s "$src" "$dst"
-    ok "verlinkt: ~/${entry#*|}"
+    ok "verlinkt: ~/$rel"
+}
+for entry in "${LINKS[@]}"; do
+    src="$REPO/${entry%%|*}"; src="${src%/.}"
+    link_one "$src" "${entry#*|}"
 done
 [[ $backed -eq 1 ]] && DONE+=("Backup: $BACKUP") || true
 "$REPO/scripts/hypr-version.sh"
 PINNED="$HOME/.cache/nwg-dock-pinned"
-[[ -s $PINNED ]] || printf '%s\n' kitty thunar com.valvesoftware.Steam > "$PINNED"
+[[ -s $PINNED ]] || printf '%s\n' kitty firefox-bin thunar com.valvesoftware.Steam > "$PINNED"
+grep -qx firefox-bin "$PINNED" || sed -i '1a firefox-bin' "$PINNED"
 xdg-user-dirs-update >/dev/null 2>&1 || true
 gsettings set org.gnome.desktop.interface gtk-theme 'WhiteSur-Dark'         2>/dev/null || true
 gsettings set org.gnome.desktop.interface icon-theme 'WhiteSur-dark'        2>/dev/null || true
@@ -289,6 +293,60 @@ gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark'        2>/d
 gsettings set org.gnome.desktop.interface font-name 'Inter 11'              2>/dev/null || true
 gsettings set org.gnome.desktop.interface monospace-font-name 'JetBrains Mono 11' 2>/dev/null || true
 DONE+=("Configs verlinkt nach ~/.config")
+
+# ── 8. Firefox ─────────────────────────────────────────────
+step "Firefox (Binärversion)"
+emerge_pkgs www-client/firefox-bin x11-misc/xdg-utils
+FF_BIN=$(command -v firefox-bin || command -v firefox || true)
+[[ -n $FF_BIN ]] || die "Firefox nicht installiert (www-client/firefox-bin)."
+ok "Firefox: $FF_BIN"
+
+# Policies: Telemetrie aus, Tracking-Schutz streng, uBlock Origin
+FF_POLICY_DIRS=(/etc/firefox/policies)
+[[ -d /opt/firefox ]] && FF_POLICY_DIRS+=(/opt/firefox/distribution)
+for d in "${FF_POLICY_DIRS[@]}"; do write_root "$d/policies.json" < "$REPO/firefox/policies.json"; done
+ok "policies.json (${FF_POLICY_DIRS[*]})"
+
+# Standardbrowser
+FF_DESKTOP=firefox-bin.desktop
+[[ -f /usr/share/applications/$FF_DESKTOP ]] || FF_DESKTOP=firefox.desktop
+xdg-mime default "$FF_DESKTOP" x-scheme-handler/http x-scheme-handler/https text/html application/xhtml+xml \
+    || warn "xdg-mime fehlgeschlagen"
+XDG_CURRENT_DESKTOP=${XDG_CURRENT_DESKTOP:-Hyprland} xdg-settings set default-web-browser "$FF_DESKTOP" 2>/dev/null || true
+ok "Standardbrowser: $FF_DESKTOP"
+
+# Profil finden bzw. einmalig headless anlegen lassen
+ff_profile() {
+    local base ini p
+    for base in "$HOME/.config/mozilla/firefox" "$HOME/.mozilla/firefox"; do
+        ini="$base/profiles.ini"; [[ -f $ini ]] || continue
+        p=$(awk -F= '/^\[Install/{s=1;next} /^\[/{s=0} s && $1=="Default"{print $2; exit}' "$ini")
+        [[ -n $p ]] || p=$(awk -F= '/^\[/{path="";def=0} $1=="Path"{path=$2} $1=="Default"&&$2=="1"{def=1} def&&path!=""{print path; exit}' "$ini")
+        [[ -n $p ]] || continue
+        [[ $p == /* ]] || p="$base/$p"
+        [[ -d $p ]] && { echo "$p"; return 0; }
+    done
+    return 1
+}
+if ! FF_PROFILE=$(ff_profile); then
+    info "lege Firefox-Profil an (headless) …"
+    timeout 20 "$FF_BIN" --headless --no-remote about:blank >/dev/null 2>&1 || true
+    sleep 1
+fi
+if FF_PROFILE=$(ff_profile); then
+    FF_REL=${FF_PROFILE#"$HOME"/}
+    link_one "$REPO/firefox/user.js" "$FF_REL/user.js"
+    link_one "$REPO/firefox/userChrome.css" "$FF_REL/chrome/userChrome.css"
+    mkdir -p "$(dirname "$EXTRA_LINKS_FILE")"; touch "$EXTRA_LINKS_FILE"
+    for rel in "$FF_REL/user.js" "$FF_REL/chrome/userChrome.css"; do
+        grep -qxF "$rel" "$EXTRA_LINKS_FILE" || echo "$rel" >> "$EXTRA_LINKS_FILE"
+    done
+    ok "Rice-Look im Profil ${FF_PROFILE/#$HOME/\~}"
+else
+    warn "Kein Firefox-Profil gefunden – Firefox einmal starten und ./install.sh erneut ausführen"
+fi
+[[ $backed -eq 1 && ! " ${DONE[*]} " == *"Backup: $BACKUP"* ]] && DONE+=("Backup: $BACKUP") || true
+DONE+=("Firefox (Standardbrowser, Policies, uBlock Origin, userChrome.css)")
 
 # ── 8. Audio ───────────────────────────────────────────────
 step "PipeWire + WirePlumber"
@@ -322,7 +380,18 @@ for prof in "$HOME/.bash_profile" "$HOME/.zprofile"; do
     printf '\n%s\n' "$SNIPPET" >> "$prof"
     ok "Autostart in ${prof/#$HOME/\~}"
 done
-DONE+=("Autostart Hyprland auf TTY1")
+touch "$HOME/.bashrc"
+grep -qF "$FASTFETCH_BEGIN" "$HOME/.bashrc" && sed -i "/$FASTFETCH_BEGIN/,/$FASTFETCH_END/d" "$HOME/.bashrc"
+cat >> "$HOME/.bashrc" <<EOF
+$FASTFETCH_BEGIN
+if [[ \$- == *i* && -n \${KITTY_WINDOW_ID:-} && -z \${GENTOO_RICE_FASTFETCH:-} ]] && command -v fastfetch >/dev/null; then
+    export GENTOO_RICE_FASTFETCH=1
+    fastfetch
+fi
+$FASTFETCH_END
+EOF
+ok "fastfetch beim Öffnen von kitty (~/.bashrc)"
+DONE+=("Autostart Hyprland auf TTY1, fastfetch in kitty")
 
 # ── 10. Grafik ─────────────────────────────────────────────
 step "Mesa / Vulkan für Radeon 780M"

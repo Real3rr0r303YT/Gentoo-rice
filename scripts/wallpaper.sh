@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Gentoo-rice – Wallpaper setzen (Bild: swww/awww, Video: mpvpaper) + Farben via pywal16
 # Nutzung: wallpaper.sh set <datei> | random | restore | init [datei] | colors
+#          colors-from <bild> | fallback <bild>   (intern, für Wallpaper Engine)
 set -euo pipefail
 export PATH="$HOME/.local/bin:$PATH"
 
@@ -9,6 +10,8 @@ WALLDIR="${RICE_WALLDIR:-$HOME/Pictures/wallpapers}"
 STATE="$HOME/.cache/rice"
 WAL="$HOME/.cache/wal"
 mkdir -p "$STATE" "$WAL"
+# shellcheck source=scripts/we-lib.sh
+source "$REPO/scripts/we-lib.sh"
 
 is_video() { [[ ${1,,} =~ \.(mp4|mkv|webm|mov|avi|m4v)$ ]]; }
 list_walls() {
@@ -106,6 +109,8 @@ set_wall() { # set_wall <datei> [quiet]
     f=$(readlink -f "$1") || { echo "Datei nicht gefunden: $1" >&2; exit 1; }
     [[ -f $f ]] || { echo "Datei nicht gefunden: $1" >&2; exit 1; }
     printf '%s\n' "$f" > "$STATE/wallpaper"
+    printf 'image\n' > "$STATE/mode"
+    we_stop
     still "$f"
     show "$f"
     gen_colors
@@ -123,7 +128,10 @@ default_wall() {
 case "${1:-}" in
     set)     [[ -n ${2:-} ]] || { echo "Nutzung: $0 set <datei>" >&2; exit 1; }; set_wall "$2" ;;
     random)  f=$(list_walls | shuf -n1); [[ -n $f ]] && set_wall "$f" ;;
-    restore) f=$(cat "$STATE/wallpaper" 2>/dev/null || true)
+    restore) if [[ $(cat "$STATE/mode" 2>/dev/null) == we ]] && [[ -f $STATE/we ]]; then
+                 exec "$REPO/scripts/we-set.sh" restore
+             fi
+             f=$(cat "$STATE/wallpaper" 2>/dev/null || true)
              [[ -f $f ]] || f=$(default_wall)
              [[ -n $f ]] && set_wall "$f" quiet ;;
     init)    f=${2:-$(cat "$STATE/wallpaper" 2>/dev/null || true)}
@@ -132,5 +140,11 @@ case "${1:-}" in
              printf '%s\n' "$(readlink -f "$f")" > "$STATE/wallpaper"
              still "$f" && gen_colors --quiet-terminals ;;
     colors)  gen_colors; reload_all ;;
+    colors-from)                       # Farben aus einem Bild, Wallpaper selbst unverändert
+             [[ -f ${2:-} ]] || exit 1
+             still "$2"; gen_colors; reload_all ;;
+    fallback)                          # Bild anzeigen + Farben, ohne den gemerkten Zustand zu ändern
+             [[ -f ${2:-} ]] || exit 1
+             still "$2"; show "$(readlink -f "$2")"; gen_colors; reload_all ;;
     *) echo "Nutzung: $0 set <datei> | random | restore | init [datei] | colors" >&2; exit 1 ;;
 esac

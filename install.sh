@@ -8,11 +8,12 @@ REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=scripts/links.sh
 source "$REPO/scripts/links.sh"
 
-DEV=0
+DEV=0 WE=0
 for arg in "$@"; do
     case $arg in
         --dev) DEV=1 ;;
-        -h|--help) printf 'Nutzung: ./install.sh [--dev]\n  --dev  zusätzlich Entwickler-Setup (scripts/dev-setup.sh)\n'; exit 0 ;;
+        --we)  WE=1 ;;
+        -h|--help) printf 'Nutzung: ./install.sh [--dev] [--we]\n  --dev  zusätzlich Entwickler-Setup (scripts/dev-setup.sh)\n  --we   zusätzlich Wallpaper Engine (scripts/wallpaperengine.sh)\n'; exit 0 ;;
         *) printf 'Unbekannte Option: %s (siehe --help)\n' "$arg" >&2; exit 1 ;;
     esac
 done
@@ -23,7 +24,7 @@ if [[ -t 1 ]]; then
 else
     B=; D=; R=; G=; Y=; C=; N=
 fi
-TOTAL=$((14 + DEV)); STEP=0; CURRENT="Start"
+TOTAL=$((14 + DEV + WE)); STEP=0; CURRENT="Start"
 DONE=()
 step() { STEP=$((STEP + 1)); CURRENT="$*"; printf '\n%s[%2d/%d]%s %s%s%s\n' "$C$B" "$STEP" "$TOTAL" "$N" "$B" "$*" "$N"; }
 info() { printf '  %s•%s %s\n' "$D" "$N" "$*"; }
@@ -487,6 +488,13 @@ fi
 flatpak override --user --filesystem=xdg-config/MangoHud:ro --talk-name=com.feralinteractive.GameMode com.valvesoftware.Steam
 ok "Steam installiert (Super+G)"
 DONE+=("gamemode, mangohud, Flatpak + Flathub, Steam")
+
+# ── Wallpaper Engine (optional) ────────────────────────────
+if [[ $WE -eq 1 ]]; then
+    step "Wallpaper Engine (linux-wallpaperengine)"
+    "$REPO/scripts/wallpaperengine.sh" || die "Wallpaper-Engine-Setup fehlgeschlagen (einzeln: ./scripts/wallpaperengine.sh)."
+    DONE+=("Wallpaper Engine: linux-wallpaperengine in ~/.local/bin")
+fi
 
 # ── Dev-Setup (optional) ───────────────────────────────────
 if [[ $DEV -eq 1 ]]; then

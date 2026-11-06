@@ -18,6 +18,7 @@ Wallpaper-driven **anime / lofi** Hyprland rice for **Gentoo (OpenRC)** – ever
   left media player (prev/play/next + title via playerctl) · center workspace pills (active one wider in accent color) · right CPU, RAM, volume, Wi-Fi, Bluetooth, battery, clock, power
 - **Wallpapers:** images via swww/awww with transition, videos via mpvpaper
 - **Wallpaper picker** (`Super + W`): horizontal bar at the bottom with cached ffmpeg thumbnails, videos marked with a **VIDEO** badge
+- **Wallpaper Engine** live wallpapers from Steam (optional, `./install.sh --we`)
 - **Terminal toys** as floating windows: cava, btop, cmatrix, tty-clock, fastfetch (Gentoo logo), lyrics overlay (sptlrx)
 - **hyprlock** in the same dynamic colors, shows the current song
 - **Firefox**, rofi launcher, mako notifications, Papirus icons, Bibata cursor
@@ -58,6 +59,41 @@ Only three self-generated gradient placeholders ship with the repo – no third-
 
 Removes all symlinks (including old wofi/mako/dock links, fastfetch, Firefox profile files), the autostart, the fastfetch entry in `~/.bashrc`, the Firefox policies, the placeholder wallpapers and the thumbnail cache, then restores the backup.
 
+## Wallpaper Engine
+
+Live wallpapers from Steam's **Wallpaper Engine** via [linux-wallpaperengine](https://github.com/Almamu/linux-wallpaperengine) by Almamu.
+
+**Requirements**
+
+- Wallpaper Engine **bought and installed in Steam** (App ID 431960) – the assets and Workshop wallpapers come from there
+- Steam as Flatpak (`~/.var/app/com.valvesoftware.Steam/.local/share/Steam`) or native (`~/.local/share/Steam`); extra libraries from `libraryfolders.vdf` are detected automatically
+
+**Install**
+
+```sh
+./install.sh --we                 # rice + Wallpaper Engine
+./scripts/wallpaperengine.sh      # Wallpaper Engine only (re-run = git pull + rebuild)
+```
+
+Installs the build dependencies via emerge, clones the repo with submodules to `~/.local/src/linux-wallpaperengine`, builds it with cmake and installs it to `~/.local/bin`.
+
+**Usage**
+
+- Subscribe to wallpapers in the Steam Workshop → `Super + W` shows them with a **WE** badge and the title from `project.json` (types `scene` and `video`; `web` is marked experimental)
+- Directly: `~/.local/share/gentoo-rice/scripts/we-set.sh <workshop-id|folder>` · stop: `we-set.sh stop`
+- The rice colors are generated from the wallpaper's `preview.jpg/gif`
+- The last wallpaper is restored when Hyprland starts
+- Settings in `~/.config/gentoo-rice/wallpaperengine.conf`: FPS (default 30), sound (default `--silent`), automute, scaling, **pause while a window is fullscreen** (default on, via Hyprland socket events), extra arguments
+- If linux-wallpaperengine fails to start, the preview image is shown via swww and an error notification appears (log: `~/.cache/rice/linux-wallpaperengine.log`)
+
+**Known limitations**
+
+- Not every scene renders correctly – linux-wallpaperengine does not support all Wallpaper Engine effects
+- `web` wallpapers are experimental; `application` wallpapers are not supported
+- User properties from the Wallpaper Engine UI are not applied automatically
+- Pausing stops the process (SIGSTOP) – the last frame stays visible
+- No wallpapers or Workshop content are shipped with this repo
+
 ## Firefox
 
 - Installs `www-client/firefox-bin` (no compiling) and sets it as default browser (`xdg-mime`/`xdg-settings` for http, https, HTML)
@@ -94,7 +130,7 @@ A summary of installed versions is printed at the end.
 |---|---|
 | `Super + Enter` | Terminal (kitty) |
 | `Super + Space` | Launcher (rofi) |
-| `Super + W` | Wallpaper picker |
+| `Super + W` | Wallpaper picker (images, videos, Wallpaper Engine) |
 | `Super + Shift + W` | Random wallpaper |
 | `Super + B` | Firefox |
 | `Super + G` | Steam |
@@ -136,7 +172,8 @@ firefox/     user.js, userChrome.css, policies.json
 gtk/         gtk-3.0 / gtk-4.0 settings.ini
 vscode/      settings.json, code-flags.conf
 wallpapers/  3 generated gradient placeholders
-scripts/     wallpaper.sh, wallpaper-picker.sh, lyrics.sh, powermenu.sh, dev-setup.sh, …
+config/      wallpaperengine.conf (template)
+scripts/     wallpaper.sh, wallpaper-picker.sh, we-set.sh, wallpaperengine.sh, lyrics.sh, dev-setup.sh, …
 ```
 
 ## Support

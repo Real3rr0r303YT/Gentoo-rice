@@ -79,6 +79,21 @@ done
 
 printf '%sWallpaper & Cache%s\n' "$B" "$N"
 pkill -x mpvpaper 2>/dev/null || true
+"$REPO/scripts/we-set.sh" stop 2>/dev/null || true
+if [[ -d $HOME/.local/opt/linux-wallpaperengine || -d $HOME/.local/src/linux-wallpaperengine ]]; then
+    rm -rf "$HOME/.local/opt/linux-wallpaperengine" "$HOME/.local/src/linux-wallpaperengine"
+    ok "linux-wallpaperengine (Build + Quellcode) entfernt"
+fi
+if [[ -f $HOME/.local/bin/linux-wallpaperengine ]] && grep -q 'Gentoo-rice' "$HOME/.local/bin/linux-wallpaperengine"; then
+    rm "$HOME/.local/bin/linux-wallpaperengine"
+fi
+WE_CONF_FILE="$HOME/.config/gentoo-rice/wallpaperengine.conf"
+if [[ -f $WE_CONF_FILE ]] && cmp -s "$WE_CONF_FILE" "$REPO/config/wallpaperengine.conf"; then
+    rm "$WE_CONF_FILE"; rmdir "$HOME/.config/gentoo-rice" 2>/dev/null || true
+    ok "Wallpaper-Engine-Config entfernt"
+elif [[ -f $WE_CONF_FILE ]]; then
+    warn "geänderte Config bleibt erhalten: ~/.config/gentoo-rice/wallpaperengine.conf"
+fi
 for f in "$REPO"/wallpapers/*.jpg; do
     w="$WALLPAPER_DIR/$(basename "$f")"
     if [[ -f $w ]] && cmp -s "$f" "$w"; then rm "$w"; ok "Platzhalter entfernt: ${w/#$HOME/\~}"; fi
@@ -91,4 +106,4 @@ if [[ -f $HOME/.icons/default/index.theme ]] && grep -qE 'WhiteSur-cursors|Bibat
     rm "$HOME/.icons/default/index.theme"; ok "Cursor-Default entfernt"
 fi
 
-printf '\n%sFertig.%s Pakete, Steam, pywal16 (~/.cache/wal), Themes, eigene Wallpaper, Standardbrowser und /etc/portage/*/gentoo-rice bleiben erhalten.\n' "$G$B" "$N"
+printf '\n%sFertig.%s Pakete, Steam, Workshop-Wallpaper, pywal16 (~/.cache/wal), Themes, eigene Wallpaper, Standardbrowser und /etc/portage/*/gentoo-rice bleiben erhalten.\n' "$G$B" "$N"

@@ -5,117 +5,102 @@
 set -Eeuo pipefail
 
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# shellcheck source=scripts/links.sh
-source "$REPO/scripts/links.sh"
 
-DEV=0 WE=0
+DEV=0 WE=0 DRY_RUN=0
 for arg in "$@"; do
     case $arg in
-        --dev) DEV=1 ;;
-        --we)  WE=1 ;;
-        -h|--help) printf 'Nutzung: ./install.sh [--dev] [--we]\n  --dev  zusätzlich Entwickler-Setup (scripts/dev-setup.sh)\n  --we   zusätzlich Wallpaper Engine (scripts/wallpaperengine.sh)\n'; exit 0 ;;
+        --dev)     DEV=1 ;;
+        --we)      WE=1 ;;
+        --dry-run) DRY_RUN=1 ;;
+        -h|--help)
+            printf 'Nutzung: ./install.sh [--dev] [--we] [--dry-run]\n'
+            printf '  --dev      zusätzlich Entwickler-Setup (scripts/dev-setup.sh)\n'
+            printf '  --we       zusätzlich Wallpaper Engine (scripts/wallpaperengine.sh)\n'
+            printf '  --dry-run  nur anzeigen, was installiert/geändert würde (keine Änderungen)\n'
+            exit 0 ;;
         *) printf 'Unbekannte Option: %s (siehe --help)\n' "$arg" >&2; exit 1 ;;
     esac
 done
 
-# ── Ausgabe ────────────────────────────────────────────────
-if [[ -t 1 ]]; then
-    B=$'\e[1m'; D=$'\e[2m'; R=$'\e[31m'; G=$'\e[32m'; Y=$'\e[33m'; C=$'\e[36m'; N=$'\e[0m'
-else
-    B=; D=; R=; G=; Y=; C=; N=
-fi
-TOTAL=$((14 + DEV + WE)); STEP=0; CURRENT="Start"
-DONE=()
-step() { STEP=$((STEP + 1)); CURRENT="$*"; printf '\n%s[%2d/%d]%s %s%s%s\n' "$C$B" "$STEP" "$TOTAL" "$N" "$B" "$*" "$N"; }
-info() { printf '  %s•%s %s\n' "$D" "$N" "$*"; }
-ok()   { printf '  %s✔%s %s\n' "$G" "$N" "$*"; }
-warn() { printf '  %s!%s %s\n' "$Y" "$N" "$*"; }
-die()  { printf '\n%s✘ Fehler:%s %s\n' "$R$B" "$N" "$*" >&2; exit 1; }
-trap 'rc=$?; printf "\n%s✘ Abbruch in Schritt %d (%s), Befehl: %s (Exit %d)%s\n" "$R$B" "$STEP" "$CURRENT" "$BASH_COMMAND" "$rc" "$N" >&2; exit $rc' ERR
+TOTAL=$((14 + DEV + WE))
+KW_FILE=/etc/portage/package.accept_keywords/gentoo-rice-auto
+# shellcheck source=scripts/links.sh
+source "$REPO/scripts/links.sh"
+# shellcheck source=scripts/lib.sh
+source "$REPO/scripts/lib.sh"
 
-# ── Vorprüfung ─────────────────────────────────────────────
-[[ -f /etc/gentoo-release ]] && command -v emerge >/dev/null || die "Dieses Skript läuft nur auf Gentoo Linux."
-[[ $EUID -ne 0 ]] || die "Bitte als normaler Benutzer starten (nicht als root) – sudo wird bei Bedarf genutzt."
-if command -v sudo >/dev/null; then SUDO=sudo
-elif command -v doas >/dev/null; then SUDO=doas
-else die "Weder sudo noch doas gefunden. Als root: emerge app-admin/sudo und Benutzer in /etc/sudoers eintragen."
-fi
 USER_NAME="$(id -un)"
+DONE=()
 
-printf '%s\n' "${B}Gentoo-rice${N} ${D}– Hyprland Setup für $USER_NAME${N}"
-if [[ $SUDO == sudo ]]; then
-    sudo -v || die "sudo-Authentifizierung fehlgeschlagen."
-    ( while kill -0 $$ 2>/dev/null; do sudo -n true; sleep 50; done ) 2>/dev/null &
-fi
+# ── Paketlisten ────────────────────────────────────────────
+# "a|b" = Alternativen (erstes verfügbares Paket wird genommen)
+PKGS_BASE=( dev-vcs/git app-eselect/eselect-repository )
+PKGS_DESKTOP=(
+    gui-wm/hyprland gui-apps/hyprlock gui-apps/hypridle
+    gui-libs/xdg-desktop-portal-hyprland sys-apps/xdg-desktop-portal sys-apps/xdg-desktop-portal-gtk
+    gui-apps/waybar x11-misc/rofi gui-apps/mako x11-terms/kitty x11-misc/xdg-utils
+    "gui-apps/awww|gui-apps/swww" gui-apps/mpvpaper media-video/mpv media-video/ffmpeg
+    media-sound/playerctl gui-apps/grim gui-apps/slurp gui-apps/wl-clipboard
+    app-misc/brightnessctl x11-libs/libnotify x11-misc/xdg-user-dirs
+    gnome-base/dconf media-gfx/imagemagick net-misc/curl app-arch/xz-utils
+    sys-auth/elogind sys-apps/dbus sys-auth/polkit
+)
+PKGS_TOYS=(
+    app-misc/fastfetch media-sound/cava sys-process/btop
+    "app-misc/cmatrix|games-misc/cmatrix|x11-misc/cmatrix"
+    "app-misc/tty-clock|x11-misc/tty-clock|games-misc/tty-clock"
+    "dev-python/pipx|app-misc/pipx"
+)
+PKGS_OPTIONAL=(
+    gui-apps/hyprpolkitagent media-sound/pavucontrol xfce-base/thunar net-misc/networkmanager
+    net-wireless/bluez net-wireless/blueman x11-themes/papirus-icon-theme
+)
+PKGS_FONTS=( media-fonts/jetbrains-mono media-fonts/fontawesome media-fonts/noto-emoji media-fonts/noto-cjk )
+PKGS_FIREFOX=( www-client/firefox-bin )
+PKGS_AUDIO=( media-video/pipewire media-video/wireplumber )
+PKGS_GPU=( sys-kernel/linux-firmware dev-util/vulkan-tools x11-apps/mesa-progs )
+PKGS_GPU_UPDATE=( media-libs/mesa media-libs/vulkan-loader x11-libs/libdrm media-libs/libva )
+PKGS_GAMING=( games-util/gamemode games-util/mangohud sys-apps/flatpak )
 
-EMERGE=(env CONFIG_PROTECT_MASK=/etc/portage emerge --noreplace --getbinpkg --binpkg-respect-use=y
-        --autounmask=y --autounmask-continue=y --quiet-build=y --keep-going=n)
-SKIPPED=()
-
-# ── Paket-/Repo-Helfer ─────────────────────────────────────
-pkg_check() { # 0 = installierbar/installiert, 1 = in keinem Repo verfügbar
-    local out
-    portageq has_version / "$1" 2>/dev/null && return 0
-    [[ -n $(pkg_repos "$1") ]] || return 1
-    # nur ~amd64 vorhanden → Keyword freigeben
-    if [[ -z $(portageq best_visible / ebuild "$1" 2>/dev/null) ]]; then
-        $SUDO mkdir -p /etc/portage/package.accept_keywords
-        $SUDO touch /etc/portage/package.accept_keywords/gentoo-rice-auto
-        $SUDO grep -qxF "$1 ~amd64" /etc/portage/package.accept_keywords/gentoo-rice-auto ||
-            echo "$1 ~amd64" | $SUDO tee -a /etc/portage/package.accept_keywords/gentoo-rice-auto >/dev/null
-    fi
-    out=$($SUDO emerge -p --quiet --autounmask=y --autounmask-continue=n "$1" 2>&1) && return 0
-    if grep -qE 'there are no ebuilds (to satisfy|built with USE)|have been masked|is not a valid package atom|is ambiguous' <<<"$out"; then
-        return 1
-    fi
-    return 0 # andere Probleme (Keywords/USE) löst autounmask beim echten emerge
-}
-
-emerge_pkgs() { # emerge_pkgs "<atom>[|alternative…]" …  – nicht verfügbare Pakete werden gemeldet und übersprungen
-    local spec a p todo=()
-    for spec in "$@"; do
-        p=""
-        for a in ${spec//|/ }; do
-            if portageq has_version / "$a" 2>/dev/null || [[ -n $(pkg_repos "$a") ]]; then p=$a; break; fi
-        done
-        if [[ -n $p ]] && pkg_check "$p"; then todo+=("$p")
-        else warn "nicht verfügbar, übersprungen: ${spec//|/ oder }"; SKIPPED+=("${spec%%|*}"); fi
-    done
-    ((${#todo[@]})) || return 0
-    $SUDO "${EMERGE[@]}" "${todo[@]}" || die "emerge fehlgeschlagen für: ${todo[*]}"
-}
-
-repo_path() { local p; p=$(portageq get_repo_path / "$1" 2>/dev/null) || true; echo "${p:-/var/db/repos/$1}"; }
-repo_enabled() { eselect repository list -i 2>/dev/null | grep -w -- "$1" >/dev/null; }
-repo_synced() { local p; p=$(repo_path "$1"); [[ -d $p && -d $p/metadata && -n "$(ls -A "$p" 2>/dev/null)" ]]; }
-
-ensure_repo() { # aktivieren + syncen, falls nötig
-    if ! repo_enabled "$1"; then
-        $SUDO eselect repository enable "$1" >/dev/null || return 1
-        info "$1 aktiviert"
-    fi
-    if ! repo_synced "$1"; then
-        info "synchronisiere $1 …"
-        $SUDO emaint sync -r "$1" >/dev/null || return 1
-    fi
-    repo_synced "$1"
-}
-
-pkg_repos() { # Repos, die Ebuilds für <cat/pkg> enthalten
-    local r out=()
-    for r in $(portageq get_repos / 2>/dev/null); do
-        compgen -G "$(repo_path "$r")/$1/*.ebuild" >/dev/null && out+=("$r")
-    done
-    echo "${out[*]}"
-}
+# ── Portage-Konfiguration ──────────────────────────────────
+read -r -d '' PORTAGE_VIDEO <<'EOF' || true
+# Radeon 780M (RDNA3)
+*/* VIDEO_CARDS: -* amdgpu radeonsi
+EOF
+read -r -d '' PORTAGE_USE <<'EOF' || true
+# Gentoo-rice
+media-libs/mesa vulkan vaapi
+media-video/pipewire sound-server pipewire-alsa
+media-video/wireplumber lua
+# Waybar: Tray braucht libdbusmenu[gtk3], Media-Insel braucht mpris
+gui-apps/waybar network pulseaudio tray mpris wifi upower logind udev
+dev-libs/libdbusmenu gtk3
+x11-libs/gtk+:3 wayland X
+gui-libs/gtk wayland X
+gui-wm/hyprland X
+x11-terms/kitty wayland
+x11-misc/rofi wayland
+media-gfx/imagemagick png jpeg webp
+media-sound/cava pulseaudio pipewire
+media-video/mpv libmpv wayland vaapi pipewire lua
+media-video/ffmpeg x264 vpx webp zlib vaapi opus
+media-libs/libsdl2 wayland
+games-util/mangohud wayland
+sys-apps/flatpak policykit
+sys-apps/xdg-desktop-portal policykit
+dev-lang/python ensurepip sqlite
+EOF
+read -r -d '' PORTAGE_LICENSE <<'EOF' || true
+sys-kernel/linux-firmware linux-fw-redistributable no-source-code
+EOF
 
 hypr_keywords() { # Keywords für alle hypr*-Pakete aller Repos (sortiert)
     local r p d cp e
     local -A kw=() from=()
     for r in $(portageq get_repos / 2>/dev/null); do
         p=$(repo_path "$r"); [[ -d $p ]] || continue
-        for d in "$p"/*/hypr* "$p"/*/aquamarine "$p"/*/xdg-desktop-portal-hyprland "$p"/*/nwg-dock-hyprland; do
-            [[ -d $d ]] && compgen -G "$d/*.ebuild" >/dev/null || continue
+        for d in "$p"/*/hypr* "$p"/*/aquamarine "$p"/*/xdg-desktop-portal-hyprland; do
+            { [[ -d $d ]] && compgen -G "$d/*.ebuild" >/dev/null; } || continue
             cp=${d#"$p"/}
             from[$cp]="${from[$cp]:+${from[$cp]},}$r"
             [[ ${kw[$cp]:-} == "~amd64" ]] || kw[$cp]="**"
@@ -124,29 +109,94 @@ hypr_keywords() { # Keywords für alle hypr*-Pakete aller Repos (sortiert)
     done
     for cp in "${!kw[@]}"; do printf '%-42s %-7s # %s\n' "$cp" "${kw[$cp]}" "${from[$cp]}"; done | sort
 }
+keywords_file() {
+    echo "# Gentoo-rice – automatisch erzeugt von install.sh"
+    echo "# Hyprland-Ökosystem (Repo-Herkunft als Kommentar)"
+    hypr_keywords
+    echo "# Abhängigkeiten / Gaming"
+    printf '%-42s %s\n' dev-cpp/sdbus-c++ "~amd64" dev-cpp/glaze "~amd64" \
+        games-util/mangohud "~amd64" games-util/gamemode "~amd64" \
+        gui-apps/swww "~amd64" gui-apps/awww "~amd64" gui-apps/mpvpaper "~amd64"
+}
 
+# ── Dry-Run ────────────────────────────────────────────────
+dry_run() {
+    local spec a r group
+    TOTAL=5
+    printf '%s\n' "${B}Gentoo-rice – Dry-Run${N} ${D}(keine Änderungen, kein sudo)${N}"
 
-write_root() { # write_root <datei>  (Inhalt von stdin, nur bei Änderung)
-    local f=$1 tmp; tmp=$(mktemp)
-    cat > "$tmp"
-    if ! $SUDO cmp -s "$tmp" "$f" 2>/dev/null; then
-        $SUDO mkdir -p "$(dirname "$f")"
-        $SUDO install -m 0644 "$tmp" "$f"
-        info "geschrieben: $f"
+    step "Repositories"
+    for r in guru hyproverlay; do
+        if repo_enabled "$r" && repo_synced "$r"; then ok "$r aktiv ($(repo_path "$r"))"
+        elif repo_enabled "$r"; then warn "$r aktiv, aber nicht synchronisiert → emaint sync -r $r"
+        elif [[ $r == guru ]]; then info "$r nicht aktiv → würde aktiviert + synchronisiert"
+        else info "$r nicht aktiv (wird nur genutzt, falls Hyprland sonst fehlt)"; fi
+    done
+    r=$(pkg_repos gui-wm/hyprland)
+    if [[ -n $r ]]; then ok "gui-wm/hyprland aus: ${r// /, }"
+    else warn "gui-wm/hyprland in keinem aktiven Repo → install.sh würde ::gentoo syncen und ggf. hyproverlay aktivieren"; fi
+
+    step "Pakete"
+    for group in PKGS_BASE PKGS_DESKTOP PKGS_TOYS PKGS_OPTIONAL PKGS_FONTS PKGS_FIREFOX PKGS_AUDIO PKGS_GPU PKGS_GAMING; do
+        local -n list=$group
+        printf '  %s%s%s\n' "$B" "${group#PKGS_}" "$N"
+        for spec in "${list[@]}"; do
+            if ! a=$(resolve_spec "$spec"); then
+                printf '    %s✘%s %-45s nicht verfügbar\n' "$R" "$N" "${spec//|/ | }"; SKIPPED+=("${spec//|/ oder }")
+                if [[ $spec == *pipx* ]]; then printf '      %s→ Fallback: scripts/ensure-pipx.sh (venv bzw. pip --user)%s\n' "$D" "$N"; fi
+            elif installed "$a"; then printf '    %s✔%s %-45s installiert\n' "$G" "$N" "$a"
+            else
+                r=$(pkg_repos "$a")
+                if [[ -n $(portageq best_visible / ebuild "$a" 2>/dev/null) ]]; then
+                    printf '    %s+%s %-45s wird installiert (%s)\n' "$C" "$N" "$a" "${r// /, }"
+                else
+                    printf '    %s+%s %-45s wird installiert (%s, braucht ~amd64)\n' "$Y" "$N" "$a" "${r// /, }"
+                fi
+                PLAN_NEW+=("$a")
+            fi
+        done
+        unset -n list
+    done
+    info "Mesa/Vulkan-Update: ${PKGS_GPU_UPDATE[*]} (--update --newuse --deep)"
+
+    step "Portage-Dateien"
+    printf '%s\n' "$PORTAGE_VIDEO" | write_root /etc/portage/package.use/00-gentoo-rice-video
+    printf '%s\n' "$PORTAGE_USE"   | write_root /etc/portage/package.use/gentoo-rice
+    keywords_file                  | write_root /etc/portage/package.accept_keywords/gentoo-rice
+    printf '%s\n' "$PORTAGE_LICENSE" | write_root /etc/portage/package.license/gentoo-rice
+    grep -qE '^\s*de_DE\.UTF-8' /etc/locale.gen 2>/dev/null || info "würde de_DE.UTF-8 in /etc/locale.gen ergänzen"
+
+    step "Weitere Aktionen"
+    for entry in "${LINKS[@]}"; do info "Symlink ~/${entry#*|} → ${entry%%|*}"; done
+    info "pywal16 per pipx, Bibata-Cursor + sptlrx von GitHub, Platzhalter-Wallpaper → $WALLPAPER_DIR"
+    info "Firefox-Policies nach /etc/firefox/policies (+ /opt/firefox/distribution), Standardbrowser"
+    info "Dienste: elogind (boot), dbus (default), bluetooth (default, falls bluez)"
+    info "Flatpak: Flathub (user), com.valvesoftware.Steam, MangoHud-Vulkan-Layer"
+    info "Autostart: Hyprland auf TTY1 (~/.bash_profile), fastfetch in kitty (~/.bashrc)"
+    if ((DEV)); then info "Dev-Setup: scripts/dev-setup.sh"; fi
+    if ((WE)); then info "Wallpaper Engine: scripts/wallpaperengine.sh"; fi
+
+    if ((${#PLAN_NEW[@]})); then
+        step "emerge --pretend (Auszug, vollständig im Log)"
+        local out
+        out=$(emerge --pretend --verbose --noreplace --autounmask=y --autounmask-use=y --autounmask-license=y \
+            "${PLAN_NEW[@]}" 2>&1) || true
+        printf '%s\n' "$out" >> "$LOG"
+        printf '%s\n' "$out" | grep -E '^\[(ebuild|binary)|USE changes|keyword changes|license changes|^[<>=~]?[a-z0-9-]+/[A-Za-z0-9_+.-]+ |no ebuilds|masked' | head -n 80 || true
+        info "Hinweis: Pakete aus GURU/hyproverlay fehlen hier, solange die Repos nicht aktiv sind."
     fi
-    rm -f "$tmp"
+    print_problems
+    printf '\n%sDry-Run beendet – nichts wurde geändert. Log: %s%s\n' "$B" "$LOG" "$N"
 }
 
-as_dir() { # /etc/portage/package.* in Verzeichnisform sicherstellen
-    local p=/etc/portage/$1
-    if [[ -f $p ]]; then $SUDO mv "$p" "$p.tmp"; $SUDO mkdir -p "$p"; $SUDO mv "$p.tmp" "$p/00-original"; fi
-    $SUDO mkdir -p "$p"
-}
+if [[ $DRY_RUN -eq 1 ]]; then dry_run; exit 0; fi
+
+printf '%s\n' "${B}Gentoo-rice${N} ${D}– Hyprland Setup für $USER_NAME · Log: $LOG${N}"
 
 # ── 1. Grundwerkzeuge ──────────────────────────────────────
 step "Grundwerkzeuge (git, eselect-repository)"
-emerge_pkgs dev-vcs/git app-eselect/eselect-repository
-command -v eselect >/dev/null && command -v git >/dev/null || die "git/eselect-repository konnten nicht installiert werden."
+emerge_pkgs "${PKGS_BASE[@]}"
+{ command -v eselect >/dev/null && command -v git >/dev/null; } || die "git/eselect-repository konnten nicht installiert werden."
 ok "git + eselect-repository vorhanden"
 DONE+=("Grundwerkzeuge")
 
@@ -157,11 +207,11 @@ ok "GURU aktiv + synchronisiert ($(repo_path guru))"
 
 if [[ -z $(pkg_repos gui-wm/hyprland) ]]; then
     warn "gui-wm/hyprland nicht gefunden – synchronisiere Gentoo-Hauptrepo"
-    $SUDO emaint sync -r gentoo >/dev/null || warn "Sync von ::gentoo fehlgeschlagen"
+    $SUDO emaint sync -r gentoo >>"$LOG" 2>&1 || warn "Sync von ::gentoo fehlgeschlagen"
 fi
 if [[ -z $(pkg_repos gui-wm/hyprland) ]]; then
     warn "gui-wm/hyprland weiterhin nicht gefunden – aktiviere hyproverlay"
-    ensure_repo hyproverlay && ok "hyproverlay aktiv + synchronisiert" || warn "hyproverlay konnte nicht eingerichtet werden"
+    if ensure_repo hyproverlay; then ok "hyproverlay aktiv + synchronisiert"; else warn "hyproverlay konnte nicht eingerichtet werden"; fi
 fi
 HYPR_REPOS=$(pkg_repos gui-wm/hyprland)
 [[ -n $HYPR_REPOS ]] || die "gui-wm/hyprland ist in keinem Repository verfügbar.
@@ -178,78 +228,32 @@ DONE+=("Repos: GURU + Hyprland aus ${HYPR_REPOS// /, }")
 # ── 3. Portage-Konfiguration ───────────────────────────────
 step "Portage: USE-Flags, Keywords, Lizenzen"
 for d in package.use package.accept_keywords package.license; do as_dir "$d"; done
-
-write_root /etc/portage/package.use/00-gentoo-rice-video <<'EOF'
-# Radeon 780M (RDNA3)
-*/* VIDEO_CARDS: -* amdgpu radeonsi
-EOF
-write_root /etc/portage/package.use/gentoo-rice <<'EOF'
-# Gentoo-rice
-media-libs/mesa vulkan vaapi
-media-video/pipewire sound-server pipewire-alsa
-gui-apps/waybar network pulseaudio tray
-gui-wm/hyprland X
-x11-terms/kitty wayland
-media-gfx/imagemagick png jpeg
-x11-misc/rofi wayland
-media-sound/cava pulseaudio pipewire
-media-video/mpv libmpv
-media-video/ffmpeg x264 vpx
-EOF
-{
-    echo "# Gentoo-rice – automatisch erzeugt von install.sh"
-    echo "# Hyprland-Ökosystem (Repo-Herkunft als Kommentar)"
-    hypr_keywords
-    echo "# Abhängigkeiten / Gaming"
-    printf '%-42s %s\n' dev-cpp/sdbus-c++ "~amd64" dev-cpp/glaze "~amd64" \
-        games-util/mangohud "~amd64" games-util/gamemode "~amd64"
-} | write_root /etc/portage/package.accept_keywords/gentoo-rice
-info "$(grep -c '^[a-z]' /etc/portage/package.accept_keywords/gentoo-rice) Keyword-Einträge"
-write_root /etc/portage/package.license/gentoo-rice <<'EOF'
-sys-kernel/linux-firmware linux-fw-redistributable
-EOF
+printf '%s\n' "$PORTAGE_VIDEO"   | write_root /etc/portage/package.use/00-gentoo-rice-video
+printf '%s\n' "$PORTAGE_USE"     | write_root /etc/portage/package.use/gentoo-rice
+keywords_file                    | write_root /etc/portage/package.accept_keywords/gentoo-rice
+printf '%s\n' "$PORTAGE_LICENSE" | write_root /etc/portage/package.license/gentoo-rice
+info "$(keywords_file | grep -c '^[a-z]' || true) Keyword-Einträge"
 
 if ! grep -qE '^\s*de_DE\.UTF-8' /etc/locale.gen 2>/dev/null; then
     echo "de_DE.UTF-8 UTF-8" | $SUDO tee -a /etc/locale.gen >/dev/null
-    $SUDO locale-gen >/dev/null
+    $SUDO locale-gen >>"$LOG" 2>&1 || warn "locale-gen fehlgeschlagen"
     info "Locale de_DE.UTF-8 erzeugt"
 fi
 ok "Portage konfiguriert"
-DONE+=("USE-Flags/Keywords in /etc/portage/*/gentoo-rice")
+DONE+=("USE-Flags/Keywords/Lizenzen in /etc/portage/*/gentoo-rice")
 
 # ── 4. Desktop-Pakete ──────────────────────────────────────
 step "Hyprland & Desktop-Pakete"
-pkg_check gui-wm/hyprland || die "gui-wm/hyprland ist nicht installierbar (emerge -p gui-wm/hyprland zeigt den Grund)."
-PKGS_DESKTOP=(
-    gui-wm/hyprland gui-apps/hyprlock gui-apps/hypridle
-    gui-libs/xdg-desktop-portal-hyprland sys-apps/xdg-desktop-portal-gtk
-    gui-apps/waybar x11-misc/rofi gui-apps/mako x11-terms/kitty x11-misc/xdg-utils
-    "gui-apps/awww|gui-apps/swww" gui-apps/mpvpaper media-video/mpv media-video/ffmpeg
-    media-sound/playerctl gui-apps/grim gui-apps/slurp gui-apps/wl-clipboard
-    app-misc/brightnessctl x11-libs/libnotify x11-misc/xdg-user-dirs
-    gnome-base/dconf media-gfx/imagemagick dev-python/pipx
-    sys-auth/elogind sys-apps/dbus sys-auth/polkit
-)
-PKGS_TOYS=(
-    app-misc/fastfetch media-sound/cava sys-process/btop
-    "app-misc/cmatrix|games-misc/cmatrix|x11-misc/cmatrix"
-    "app-misc/tty-clock|x11-misc/tty-clock|games-misc/tty-clock"
-)
-PKGS_OPTIONAL=( gui-apps/hyprpolkitagent media-sound/pavucontrol xfce-base/thunar net-misc/networkmanager
-                net-wireless/bluez net-wireless/blueman x11-themes/papirus-icon-theme )
 emerge_pkgs "${PKGS_DESKTOP[@]}"
+installed gui-wm/hyprland || die "Hyprland wurde nicht installiert – Details im Log ($LOG), Abschnitt gui-wm/hyprland."
 emerge_pkgs "${PKGS_TOYS[@]}"
-for p in "${PKGS_OPTIONAL[@]}"; do
-    if ! pkg_check "$p"; then warn "optional, nicht verfügbar: $p"; SKIPPED+=("$p"); continue; fi
-    $SUDO "${EMERGE[@]}" "$p" >/dev/null 2>&1 && ok "$p" || { warn "optional fehlgeschlagen: $p"; SKIPPED+=("$p"); }
-done
-portageq has_version / gui-wm/hyprland || die "Hyprland wurde nicht installiert."
+emerge_pkgs --optional "${PKGS_OPTIONAL[@]}"
 ok "Desktop-Pakete installiert"
 DONE+=("Hyprland, hyprlock, hypridle, Waybar, rofi, mako, kitty, swww, mpvpaper, cava, btop, cmatrix, tty-clock")
 
 # ── 5. Fonts ───────────────────────────────────────────────
 step "Fonts (JetBrains Mono, Font Awesome, Noto CJK/Emoji)"
-emerge_pkgs media-fonts/jetbrains-mono media-fonts/fontawesome media-fonts/noto-emoji media-fonts/noto-cjk
+emerge_pkgs "${PKGS_FONTS[@]}"
 fc-cache -f >/dev/null 2>&1 || true
 ok "Fonts installiert"
 DONE+=("Fonts JetBrains Mono, Font Awesome, Noto CJK")
@@ -264,7 +268,7 @@ if [[ ! -d $HOME/.local/share/icons/Bibata-Modern-Classic ]]; then
         && mkdir -p "$HOME/.local/share/icons" && tar -xJf "$tmp/b.tar.xz" -C "$HOME/.local/share/icons"; then
         ok "Cursor: Bibata-Modern-Classic"
     else
-        warn "Bibata-Cursor konnte nicht geladen werden – Standard-Cursor bleibt"; SKIPPED+=("Bibata-Cursor")
+        warn "Bibata-Cursor konnte nicht geladen werden – Standard-Cursor bleibt"; SKIPPED+=("Bibata-Cursor (Download)")
     fi
     rm -rf "$tmp"
 else
@@ -318,20 +322,19 @@ DONE+=("Configs verlinkt nach ~/.config")
 
 # ── 8. Wallpaper & Farben ──────────────────────────────────
 step "Wallpaper & dynamische Farben (pywal16)"
-export PATH="$HOME/.local/bin:$PATH"
 if command -v wal >/dev/null; then
     ok "pywal16 vorhanden"
-elif command -v pipx >/dev/null && pipx install pywal16 >/dev/null 2>&1; then
-    ok "pywal16 installiert (pipx)"
+elif "$REPO/scripts/ensure-pipx.sh" >>"$LOG" 2>&1 && pipx install pywal16 >>"$LOG" 2>&1; then
+    ok "pywal16 installiert (pipx: $(command -v pipx))"
 else
-    warn "pywal16 nicht installierbar – festes Fallback-Farbschema wird genutzt"; SKIPPED+=("pywal16")
+    warn "pywal16 nicht installierbar – festes Fallback-Farbschema wird genutzt"; FAILED+=("pywal16 (pipx)")
 fi
 mkdir -p "$WALLPAPER_DIR"
 for f in "$REPO"/wallpapers/*.jpg; do
     [[ -e $WALLPAPER_DIR/$(basename "$f") ]] || { cp "$f" "$WALLPAPER_DIR/"; info "Wallpaper: $(basename "$f")"; }
 done
 "$REPO/scripts/wallpaper.sh" init || die "Farbschema konnte nicht erzeugt werden."
-[[ -f $HOME/.cache/wal/colors-hyprland.conf ]] || die "~/.cache/wal/colors-hyprland.conf fehlt."
+[[ -f $HOME/.cache/wal/colors-hyprland.conf ]] || die "$HOME/.cache/wal/colors-hyprland.conf fehlt."
 ok "Farbschema aus $(basename "$(cat "$HOME/.cache/rice/wallpaper")")"
 
 # btop: Terminal-Farben (folgen pywal)
@@ -354,7 +357,7 @@ else
     if [[ -n $url ]] && curl -fsSL "$url" | tar -xz -C "$tmp" && [[ -f $tmp/sptlrx ]]; then
         install -Dm755 "$tmp/sptlrx" "$HOME/.local/bin/sptlrx"; ok "sptlrx installiert (Songtexte, Super+Y)"
     else
-        warn "sptlrx nicht installiert (optional)"; SKIPPED+=("sptlrx")
+        warn "sptlrx nicht installiert (optional)"; SKIPPED+=("sptlrx (Download, optional)")
     fi
     rm -rf "$tmp"
 fi
@@ -362,70 +365,79 @@ DONE+=("Wallpaper in ~/Pictures/wallpapers, Farben via pywal16")
 
 # ── 8. Firefox ─────────────────────────────────────────────
 step "Firefox (Binärversion)"
-emerge_pkgs www-client/firefox-bin x11-misc/xdg-utils
+emerge_pkgs "${PKGS_FIREFOX[@]}"
 FF_BIN=$(command -v firefox-bin || command -v firefox || true)
-[[ -n $FF_BIN ]] || die "Firefox nicht installiert (www-client/firefox-bin)."
-ok "Firefox: $FF_BIN"
-
-# Policies: Telemetrie aus, Tracking-Schutz streng, uBlock Origin
-FF_POLICY_DIRS=(/etc/firefox/policies)
-[[ -d /opt/firefox ]] && FF_POLICY_DIRS+=(/opt/firefox/distribution)
-for d in "${FF_POLICY_DIRS[@]}"; do write_root "$d/policies.json" < "$REPO/firefox/policies.json"; done
-ok "policies.json (${FF_POLICY_DIRS[*]})"
-
-# Standardbrowser
-FF_DESKTOP=firefox-bin.desktop
-[[ -f /usr/share/applications/$FF_DESKTOP ]] || FF_DESKTOP=firefox.desktop
-xdg-mime default "$FF_DESKTOP" x-scheme-handler/http x-scheme-handler/https text/html application/xhtml+xml \
-    || warn "xdg-mime fehlgeschlagen"
-XDG_CURRENT_DESKTOP=${XDG_CURRENT_DESKTOP:-Hyprland} xdg-settings set default-web-browser "$FF_DESKTOP" 2>/dev/null || true
-ok "Standardbrowser: $FF_DESKTOP"
-
-# Profil finden bzw. einmalig headless anlegen lassen
-ff_profile() {
-    local base ini p
-    for base in "$HOME/.config/mozilla/firefox" "$HOME/.mozilla/firefox"; do
-        ini="$base/profiles.ini"; [[ -f $ini ]] || continue
-        p=$(awk -F= '/^\[Install/{s=1;next} /^\[/{s=0} s && $1=="Default"{print $2; exit}' "$ini")
-        [[ -n $p ]] || p=$(awk -F= '/^\[/{path="";def=0} $1=="Path"{path=$2} $1=="Default"&&$2=="1"{def=1} def&&path!=""{print path; exit}' "$ini")
-        [[ -n $p ]] || continue
-        [[ $p == /* ]] || p="$base/$p"
-        [[ -d $p ]] && { echo "$p"; return 0; }
-    done
-    return 1
-}
-if ! FF_PROFILE=$(ff_profile); then
-    info "lege Firefox-Profil an (headless) …"
-    timeout 20 "$FF_BIN" --headless --no-remote about:blank >/dev/null 2>&1 || true
-    sleep 1
-fi
-if FF_PROFILE=$(ff_profile); then
-    FF_REL=${FF_PROFILE#"$HOME"/}
-    link_one "$REPO/firefox/user.js" "$FF_REL/user.js"
-    link_one "$REPO/firefox/userChrome.css" "$FF_REL/chrome/userChrome.css"
-    mkdir -p "$(dirname "$EXTRA_LINKS_FILE")"; touch "$EXTRA_LINKS_FILE"
-    for rel in "$FF_REL/user.js" "$FF_REL/chrome/userChrome.css"; do
-        grep -qxF "$rel" "$EXTRA_LINKS_FILE" || echo "$rel" >> "$EXTRA_LINKS_FILE"
-    done
-    ok "Rice-Look im Profil ${FF_PROFILE/#$HOME/\~}"
+if [[ -z $FF_BIN ]]; then
+    warn "Firefox nicht installiert – Firefox-Einrichtung übersprungen"
 else
-    warn "Kein Firefox-Profil gefunden – Firefox einmal starten und ./install.sh erneut ausführen"
+    ok "Firefox: $FF_BIN"
+
+    # Policies: Telemetrie aus, Tracking-Schutz streng, uBlock Origin
+    FF_POLICY_DIRS=(/etc/firefox/policies)
+    [[ -d /opt/firefox ]] && FF_POLICY_DIRS+=(/opt/firefox/distribution)
+    for d in "${FF_POLICY_DIRS[@]}"; do write_root "$d/policies.json" < "$REPO/firefox/policies.json"; done
+    ok "policies.json (${FF_POLICY_DIRS[*]})"
+
+    # Standardbrowser
+    FF_DESKTOP=firefox-bin.desktop
+    [[ -f /usr/share/applications/$FF_DESKTOP ]] || FF_DESKTOP=firefox.desktop
+    xdg-mime default "$FF_DESKTOP" x-scheme-handler/http x-scheme-handler/https text/html application/xhtml+xml \
+        || warn "xdg-mime fehlgeschlagen"
+    XDG_CURRENT_DESKTOP=${XDG_CURRENT_DESKTOP:-Hyprland} xdg-settings set default-web-browser "$FF_DESKTOP" 2>/dev/null || true
+    ok "Standardbrowser: $FF_DESKTOP"
+
+    # Profil finden bzw. einmalig headless anlegen lassen
+    ff_profile() {
+        local base ini p
+        for base in "$HOME/.config/mozilla/firefox" "$HOME/.mozilla/firefox"; do
+            ini="$base/profiles.ini"; [[ -f $ini ]] || continue
+            p=$(awk -F= '/^\[Install/{s=1;next} /^\[/{s=0} s && $1=="Default"{print $2; exit}' "$ini")
+            [[ -n $p ]] || p=$(awk -F= '/^\[/{path="";def=0} $1=="Path"{path=$2} $1=="Default"&&$2=="1"{def=1} def&&path!=""{print path; exit}' "$ini")
+            [[ -n $p ]] || continue
+            [[ $p == /* ]] || p="$base/$p"
+            [[ -d $p ]] && { echo "$p"; return 0; }
+        done
+        return 1
+    }
+    if ! FF_PROFILE=$(ff_profile); then
+        info "lege Firefox-Profil an (headless) …"
+        timeout 20 "$FF_BIN" --headless --no-remote about:blank >/dev/null 2>&1 || true
+        sleep 1
+    fi
+    if FF_PROFILE=$(ff_profile); then
+        FF_REL=${FF_PROFILE#"$HOME"/}
+        link_one "$REPO/firefox/user.js" "$FF_REL/user.js"
+        link_one "$REPO/firefox/userChrome.css" "$FF_REL/chrome/userChrome.css"
+        mkdir -p "$(dirname "$EXTRA_LINKS_FILE")"; touch "$EXTRA_LINKS_FILE"
+        for rel in "$FF_REL/user.js" "$FF_REL/chrome/userChrome.css"; do
+            grep -qxF "$rel" "$EXTRA_LINKS_FILE" || echo "$rel" >> "$EXTRA_LINKS_FILE"
+        done
+        ok "Rice-Look im Profil ${FF_PROFILE/#$HOME/\~}"
+    else
+        warn "Kein Firefox-Profil gefunden – Firefox einmal starten und ./install.sh erneut ausführen"
+    fi
 fi
 [[ $backed -eq 1 && ! " ${DONE[*]} " == *"Backup: $BACKUP"* ]] && DONE+=("Backup: $BACKUP") || true
 DONE+=("Firefox (Standardbrowser, Policies, uBlock Origin, userChrome.css)")
 
 # ── 8. Audio ───────────────────────────────────────────────
 step "PipeWire + WirePlumber"
-emerge_pkgs media-video/pipewire media-video/wireplumber
-for g in audio video input pipewire seat gamemode; do
+emerge_pkgs "${PKGS_AUDIO[@]}"
+for g in audio video input pipewire seat gamemode plugdev; do
     if getent group "$g" >/dev/null && ! id -nG "$USER_NAME" | grep -w "$g" >/dev/null; then
-        $SUDO usermod -aG "$g" "$USER_NAME"; info "Gruppe $g hinzugefügt"
+        if $SUDO usermod -aG "$g" "$USER_NAME"; then info "Gruppe $g hinzugefügt"; else warn "usermod -aG $g fehlgeschlagen"; fi
     fi
 done
-for svc in elogind:boot dbus:default; do
+SERVICES=(elogind:boot dbus:default)
+[[ -x /etc/init.d/bluetooth ]] && SERVICES+=(bluetooth:default)
+for svc in "${SERVICES[@]}"; do
     s=${svc%%:*}; lvl=${svc#*:}
-    rc-update show "$lvl" 2>/dev/null | grep -w "$s" >/dev/null || { $SUDO rc-update add "$s" "$lvl" >/dev/null; info "rc-update add $s $lvl"; }
+    [[ -x /etc/init.d/$s ]] || { warn "Dienst $s nicht vorhanden"; continue; }
+    if ! rc-update show "$lvl" 2>/dev/null | grep -w "$s" >/dev/null; then
+        if $SUDO rc-update add "$s" "$lvl" >>"$LOG" 2>&1; then info "rc-update add $s $lvl"; else warn "rc-update add $s $lvl fehlgeschlagen"; fi
+    fi
 done
+command -v gentoo-pipewire-launcher >/dev/null || warn "gentoo-pipewire-launcher fehlt (media-video/pipewire mit USE=sound-server?)"
 ok "PipeWire startet mit Hyprland (gentoo-pipewire-launcher)"
 DONE+=("PipeWire/WirePlumber")
 
@@ -461,46 +473,60 @@ DONE+=("Autostart Hyprland auf TTY1, fastfetch in kitty")
 
 # ── 10. Grafik ─────────────────────────────────────────────
 step "Mesa / Vulkan für Radeon 780M"
-emerge_pkgs sys-kernel/linux-firmware
-$SUDO "${EMERGE[@]/--noreplace/--update}" --newuse --deep \
-    media-libs/mesa media-libs/vulkan-loader x11-libs/libdrm media-libs/libva \
-    || die "Mesa/Vulkan-Update fehlgeschlagen."
-emerge_pkgs dev-util/vulkan-tools x11-apps/mesa-progs
-ok "Mesa (radeonsi + RADV) installiert"
+emerge_pkgs "${PKGS_GPU[@]}"
+# VIDEO_CARDS geändert → Mesa & Co. mit neuen Flags neu bauen
+info "Mesa/Vulkan-Update (--update --newuse --deep) …"
+$SUDO "${EMERGE_BASE[@]}" "${AUTOUNMASK_WRITE[@]/--noreplace/--update}" --newuse --deep "${PKGS_GPU_UPDATE[@]}" >>"$LOG" 2>&1 || true
+$SUDO etc-update --automode -5 /etc/portage >>"$LOG" 2>&1 || true
+if $SUDO "${EMERGE_BASE[@]}" "${EMERGE_OPTS[@]/--noreplace/--update}" --newuse --deep "${PKGS_GPU_UPDATE[@]}"; then
+    ok "Mesa (radeonsi + RADV) aktuell"
+else
+    warn "Mesa/Vulkan-Update mit Fehlern"; FAILED+=("Mesa/Vulkan-Update (${PKGS_GPU_UPDATE[*]})")
+fi
+command -v vulkaninfo >/dev/null && info "Test: vulkaninfo --summary"
 DONE+=("Mesa/Vulkan (RADV) für Radeon 780M")
 
 # ── 11. Gaming ─────────────────────────────────────────────
 step "Gaming: gamemode, mangohud, Flatpak, Steam"
-emerge_pkgs games-util/gamemode games-util/mangohud sys-apps/flatpak
-command -v flatpak >/dev/null || die "flatpak nicht verfügbar – Steam kann nicht installiert werden."
-flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
-ok "Flathub (user) eingerichtet"
-if flatpak info --user com.valvesoftware.Steam >/dev/null 2>&1; then
-    ok "Steam bereits installiert"
+emerge_pkgs "${PKGS_GAMING[@]}"
+if ! command -v flatpak >/dev/null; then
+    warn "flatpak nicht verfügbar – Steam übersprungen"; FAILED+=("Steam (flatpak fehlt)")
+elif ! flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo; then
+    warn "Flathub konnte nicht eingerichtet werden"; FAILED+=("Flathub")
 else
-    flatpak install --user -y --noninteractive flathub com.valvesoftware.Steam || die "Steam-Flatpak konnte nicht installiert werden."
+    ok "Flathub (user) eingerichtet"
+    if flatpak info --user com.valvesoftware.Steam >/dev/null 2>&1; then
+        ok "Steam bereits installiert"
+    elif flatpak install --user -y --noninteractive flathub com.valvesoftware.Steam; then
+        ok "Steam installiert (Super+G)"
+    else
+        warn "Steam-Flatpak konnte nicht installiert werden"; FAILED+=("com.valvesoftware.Steam (Flatpak)")
+    fi
+    RT=$(flatpak info --user com.valvesoftware.Steam 2>/dev/null | awk -F/ '/Runtime:/{print $NF}' || true)
+    if [[ -n $RT ]]; then
+        if flatpak install --user -y --noninteractive flathub "org.freedesktop.Platform.VulkanLayer.MangoHud//$RT"; then
+            ok "MangoHud-Layer für Steam ($RT)"
+        else
+            warn "MangoHud-Flatpak-Layer nicht installiert"; FAILED+=("org.freedesktop.Platform.VulkanLayer.MangoHud//$RT")
+        fi
+        flatpak override --user --filesystem=xdg-config/MangoHud:ro --talk-name=com.feralinteractive.GameMode \
+            com.valvesoftware.Steam || warn "flatpak override fehlgeschlagen"
+    fi
 fi
-RT=$(flatpak info --user com.valvesoftware.Steam 2>/dev/null | awk -F/ '/Runtime:/{print $NF}')
-if [[ -n $RT ]]; then
-    flatpak install --user -y --noninteractive flathub "org.freedesktop.Platform.VulkanLayer.MangoHud//$RT" \
-        && ok "MangoHud-Layer für Steam ($RT)" || warn "MangoHud-Flatpak-Layer nicht installiert"
-fi
-flatpak override --user --filesystem=xdg-config/MangoHud:ro --talk-name=com.feralinteractive.GameMode com.valvesoftware.Steam
-ok "Steam installiert (Super+G)"
 DONE+=("gamemode, mangohud, Flatpak + Flathub, Steam")
 
 # ── Wallpaper Engine (optional) ────────────────────────────
 if [[ $WE -eq 1 ]]; then
     step "Wallpaper Engine (linux-wallpaperengine)"
-    "$REPO/scripts/wallpaperengine.sh" || die "Wallpaper-Engine-Setup fehlgeschlagen (einzeln: ./scripts/wallpaperengine.sh)."
-    DONE+=("Wallpaper Engine: linux-wallpaperengine in ~/.local/bin")
+    if "$REPO/scripts/wallpaperengine.sh"; then DONE+=("Wallpaper Engine: linux-wallpaperengine in ~/.local/bin")
+    else warn "Wallpaper-Engine-Setup fehlgeschlagen"; FAILED+=("Wallpaper Engine (einzeln: ./scripts/wallpaperengine.sh)"); fi
 fi
 
 # ── Dev-Setup (optional) ───────────────────────────────────
 if [[ $DEV -eq 1 ]]; then
     step "Entwickler-Setup"
-    "$REPO/scripts/dev-setup.sh" || die "Dev-Setup fehlgeschlagen (einzeln: ./scripts/dev-setup.sh)."
-    DONE+=("Dev-Setup: VS Code, Claude Code, Python, Dev-Tools")
+    if "$REPO/scripts/dev-setup.sh"; then DONE+=("Dev-Setup: VS Code, Claude Code, Python, Dev-Tools")
+    else warn "Dev-Setup fehlgeschlagen"; FAILED+=("Dev-Setup (einzeln: ./scripts/dev-setup.sh)"); fi
 fi
 
 # ── 12. Fertig ─────────────────────────────────────────────
@@ -511,15 +537,13 @@ ok "Alles erledigt"
 printf '\n%s╭─ Zusammenfassung ─────────────────────────────╮%s\n' "$B" "$N"
 for d in "${DONE[@]}"; do printf '  %s✔%s %s\n' "$G" "$N" "$d"; done
 printf '%s╰───────────────────────────────────────────────╯%s\n' "$B" "$N"
-if ((${#SKIPPED[@]})); then
-    printf '\n%sÜbersprungen (nicht verfügbar):%s\n' "$Y$B" "$N"
-    for s in "${SKIPPED[@]}"; do printf '  %s!%s %s\n' "$Y" "$N" "$s"; done
-fi
+print_problems
+printf '\n%sLog:%s %s\n' "$B" "$N" "$LOG"
 printf '\n%sJetzt neu starten:%s %s\n' "$B$Y" "$N" "loginctl reboot"
 printf '%sNach dem Login auf TTY1 startet Hyprland automatisch.%s\n' "$D" "$N"
 printf '%sSteam in Spielen: Startoptionen  →  gamemoderun mangohud %%command%%%s\n\n' "$D" "$N"
 if [[ -t 0 ]]; then
-    read -r -p "Jetzt neu starten? [j/N] " a
-    [[ $a =~ ^[jJyY]$ ]] && { loginctl reboot 2>/dev/null || $SUDO reboot; }
+    read -r -p "Jetzt neu starten? [j/N] " a || a=""
+    if [[ $a =~ ^[jJyY]$ ]]; then loginctl reboot 2>/dev/null || $SUDO reboot; fi
 fi
 exit 0

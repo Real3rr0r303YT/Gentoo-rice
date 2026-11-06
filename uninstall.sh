@@ -66,14 +66,18 @@ PINNED="$HOME/.cache/nwg-dock-pinned"
 [[ -f $PINNED ]] && sed -i '/^firefox-bin$/d' "$PINNED" && ok "Firefox aus Dock entfernt"
 
 printf '%sFirefox-Policies entfernen%s\n' "$B" "$N"
-SUDO=; command -v sudo >/dev/null && SUDO=sudo || { command -v doas >/dev/null && SUDO=doas; }
+SUDO=
+if command -v sudo >/dev/null; then SUDO=sudo; elif command -v doas >/dev/null; then SUDO=doas; fi
 for f in /etc/firefox/policies/policies.json /opt/firefox/distribution/policies.json; do
-    [[ -f $f ]] && cmp -s "$f" "$REPO/firefox/policies.json" || continue
+    { [[ -f $f ]] && cmp -s "$f" "$REPO/firefox/policies.json"; } || continue
     if [[ $f == /opt/* ]]; then
-        printf '{\n    "policies": {\n        "DisableAppUpdate": true\n    }\n}\n' | $SUDO tee "$f" >/dev/null \
-            && ok "zurückgesetzt: $f" || warn "nicht änderbar: $f"
+        if printf '{\n    "policies": {\n        "DisableAppUpdate": true\n    }\n}\n' | $SUDO tee "$f" >/dev/null; then
+            ok "zurückgesetzt: $f"
+        else
+            warn "nicht änderbar: $f"
+        fi
     else
-        $SUDO rm -f "$f" && ok "entfernt: $f" || warn "nicht entfernbar: $f"
+        if $SUDO rm -f "$f"; then ok "entfernt: $f"; else warn "nicht entfernbar: $f"; fi
     fi
 done
 
@@ -99,7 +103,7 @@ for f in "$REPO"/wallpapers/*.jpg; do
     if [[ -f $w ]] && cmp -s "$f" "$w"; then rm "$w"; ok "Platzhalter entfernt: ${w/#$HOME/\~}"; fi
 done
 rmdir "$WALLPAPER_DIR" 2>/dev/null || true
-rm -rf "$HOME/.cache/rice" && ok "~/.cache/rice (Thumbnails) entfernt"
+rm -rf "$HOME/.cache/rice" && ok "$HOME/.cache/rice (Thumbnails) entfernt"
 [[ -f $HOME/.config/btop/btop.conf ]] && sed -i 's/^color_theme *=.*/color_theme = "Default"/' "$HOME/.config/btop/btop.conf" || true
 
 if [[ -f $HOME/.icons/default/index.theme ]] && grep -qE 'WhiteSur-cursors|Bibata-Modern-Classic' "$HOME/.icons/default/index.theme"; then

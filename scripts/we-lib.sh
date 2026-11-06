@@ -1,4 +1,4 @@
-# shellcheck shell=bash
+# shellcheck shell=bash disable=SC2034  # WE_*-Variablen werden von den aufrufenden Skripten genutzt
 # Gentoo-rice – Wallpaper-Engine-Helfer (Steam-Pfade, project.json, Konfiguration)
 # Copyright (C) 2026 3rr0r303YT – GPL-3.0-or-later
 
@@ -41,7 +41,7 @@ we_libraries() {
 we_workshop_dirs() {
     local l
     for l in $(we_libraries); do
-        [[ -d $l/steamapps/workshop/content/$WE_APPID ]] && echo "$l/steamapps/workshop/content/$WE_APPID"
+        if [[ -d $l/steamapps/workshop/content/$WE_APPID ]]; then echo "$l/steamapps/workshop/content/$WE_APPID"; fi
     done
 }
 
@@ -65,10 +65,10 @@ we_resolve() {
 
 # Liste aller Workshop-Wallpaper: Ordner<TAB>Typ<TAB>Titel<TAB>Vorschau
 we_list() {
-    local dirs
-    dirs=$(we_workshop_dirs)
-    [[ -n $dirs ]] || return 0
-    python3 - $dirs <<'PY'
+    local dirs=()
+    mapfile -t dirs < <(we_workshop_dirs)
+    ((${#dirs[@]})) || return 0
+    python3 - "${dirs[@]}" <<'PY'
 import json, os, sys
 for base in sys.argv[1:]:
     for d in sorted(os.listdir(base)):

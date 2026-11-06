@@ -30,7 +30,12 @@ Wallpaper-basiertes **Anime-/Lofi**-Hyprland-Rice für **Gentoo (OpenRC)** – a
 git clone https://github.com/Real3rr0r303YT/Gentoo-rice && cd Gentoo-rice && ./install.sh
 ```
 
+```sh
+./install.sh --dry-run   # nur anzeigen, was installiert/geändert würde (kein sudo, keine Änderungen)
+```
+
 Als normaler Benutzer starten – `sudo`/`doas` wird nur für Systemschritte genutzt.
+Jeder Lauf wird nach `~/.cache/gentoo-rice/install.log` geloggt. Vor dem Bauen macht emerge einen Probelauf (`--pretend`); nötige USE-/Keyword-/Lizenz-Änderungen werden automatisch übernommen (autounmask + `etc-update --automode -5`). Schlägt der Sammel-emerge fehl, werden die Pakete einzeln nachinstalliert und alle Fehlschläge am Ende aufgelistet.
 Das Skript ist mehrfach ausführbar; nicht verfügbare Pakete werden gemeldet und übersprungen.
 Vorhandene Configs werden nach `~/.config-backup/gentoo-rice/<Datum>/` gesichert.
 

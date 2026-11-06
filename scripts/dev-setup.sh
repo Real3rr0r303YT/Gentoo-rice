@@ -40,7 +40,8 @@ ok "Dev-Tools installiert"
 
 # ── 3. Python ──────────────────────────────────────────────
 step "Python, pip, pipx, venv"
-emerge_pkgs dev-lang/python dev-python/pip dev-python/pipx
+emerge_pkgs dev-lang/python dev-python/pip "dev-python/pipx|app-misc/pipx"
+"$REPO/scripts/ensure-pipx.sh" || warn "pipx konnte nicht eingerichtet werden"
 command -v python3 >/dev/null || die "python3 nicht gefunden."
 if python3 -m venv --help >/dev/null 2>&1; then ok "venv verfügbar ($(python3 --version))"
 else warn "python3 -m venv nicht nutzbar (USE=ensurepip prüfen)"; fi
@@ -58,6 +59,7 @@ else
     curl -fsSL https://claude.ai/install.sh | bash || die "Claude-Code-Installer fehlgeschlagen."
 fi
 if ! grep -qE '\.local/bin' "$HOME/.bashrc" 2>/dev/null || grep -qF '# >>> gentoo-rice path >>>' "$HOME/.bashrc"; then
+    # shellcheck disable=SC2016  # $PATH/$HOME sollen erst in ~/.bashrc expandieren
     bashrc_block path 'case ":$PATH:" in *":$HOME/.local/bin:"*) ;; *) export PATH="$HOME/.local/bin:$PATH" ;; esac'
     info "PATH in ~/.bashrc ergänzt"
 fi
@@ -85,7 +87,7 @@ have=$(code --list-extensions 2>/dev/null | tr '[:upper:]' '[:lower:]')
 for e in "${EXTS[@]}"; do
     if grep -qxF "${e,,}" <<<"$have"; then ok "$e"
     elif code --install-extension "$e" --force >/dev/null 2>&1; then ok "$e installiert"
-    else warn "Extension fehlgeschlagen: $e"; SKIPPED+=("vscode:$e"); fi
+    else warn "Extension fehlgeschlagen: $e"; FAILED+=("VS-Code-Extension $e"); fi
 done
 
 # ── 7. VS-Code-Config ──────────────────────────────────────
@@ -107,7 +109,7 @@ for f in code-flags.conf electron-flags.conf; do
         cp "$REPO/vscode/code-flags.conf" "$HOME/.config/$f"
     fi
 done
-ok "~/.config/code-flags.conf (--ozone-platform=wayland)"
+ok "$HOME/.config/code-flags.conf (--ozone-platform=wayland)"
 
 # ── 8. Git ─────────────────────────────────────────────────
 step "Git-Basis-Konfiguration"
@@ -160,8 +162,6 @@ ver "neovim"   nvim --version
 ver "curl"     curl --version
 ver "wget"     wget --version
 printf '%s╰───────────────────────────────────────────────╯%s\n' "$B" "$N"
-if ((${#SKIPPED[@]})); then
-    printf '\n%sÜbersprungen:%s %s\n' "$Y$B" "$N" "${SKIPPED[*]}"
-fi
+print_problems
 printf '\n%sNeues Terminal öffnen (oder: source ~/.bashrc), damit PATH greift.%s\n\n' "$D" "$N"
 exit 0

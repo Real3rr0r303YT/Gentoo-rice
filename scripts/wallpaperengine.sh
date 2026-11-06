@@ -56,16 +56,17 @@ for c in "$SRC/build/output/linux-wallpaperengine" "$SRC/build/linux-wallpaperen
 done
 [[ -n $bin ]] || bin=$(find "$SRC/build" -maxdepth 3 -type f -name linux-wallpaperengine -perm -u+x | head -n1)
 [[ -n $bin ]] || die "Binary linux-wallpaperengine nach dem Build nicht gefunden."
-out=$(dirname "$bin")
+outdir=$(dirname "$bin")
 rm -rf "$OPT.new"; mkdir -p "$OPT.new"
-if [[ $out == "$SRC/build" ]]; then
+if [[ $outdir == "$SRC/build" ]]; then
     # Build-Wurzel: nur Laufzeitdateien kopieren
     cp -a "$bin" "$OPT.new/"
-    for f in "$out"/*.so* "$out"/*.pak "$out"/*.dat "$out"/*.bin "$out"/*.json "$out"/assets "$out"/locales "$out"/shaders; do
-        [[ -e $f ]] && cp -a "$f" "$OPT.new/"
+    for f in "$outdir"/*.so* "$outdir"/*.pak "$outdir"/*.dat "$outdir"/*.bin "$outdir"/*.json \
+             "$outdir"/assets "$outdir"/locales "$outdir"/shaders; do
+        if [[ -e $f ]]; then cp -a "$f" "$OPT.new/"; fi
     done
 else
-    cp -a "$out"/. "$OPT.new/"
+    cp -a "$outdir"/. "$OPT.new/"
 fi
 rm -rf "$OPT"; mv "$OPT.new" "$OPT"
 mkdir -p "$HOME/.local/bin"
@@ -75,7 +76,7 @@ cat > "$WE_BIN" <<EOF
 cd "$OPT" && exec "$OPT/linux-wallpaperengine" "\$@"
 EOF
 chmod +x "$WE_BIN"
-ok "~/.local/bin/linux-wallpaperengine → ${OPT/#$HOME/\~}"
+ok "$WE_BIN → ${OPT/#$HOME/\~}"
 
 # ── 5. Konfiguration & Steam ───────────────────────────────
 step "Konfiguration & Steam-Pfade"
@@ -101,5 +102,5 @@ printf '  • Wallpaper im Workshop abonnieren, dann Super+W → Einträge mit �
 printf '  • Direkt: ~/.local/share/gentoo-rice/scripts/we-set.sh <Workshop-ID>\n'
 printf '  • Einstellungen: %s\n' "${WE_CONF/#$HOME/\~}"
 printf '%s╰────────────────────────────────────────────────╯%s\n' "$B" "$N"
-if ((${#SKIPPED[@]})); then printf '\n%sÜbersprungen:%s %s\n' "$Y$B" "$N" "${SKIPPED[*]}"; fi
+print_problems
 exit 0

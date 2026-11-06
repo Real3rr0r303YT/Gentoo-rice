@@ -30,7 +30,12 @@ Wallpaper-driven **anime / lofi** Hyprland rice for **Gentoo (OpenRC)** – ever
 git clone https://github.com/Real3rr0r303YT/Gentoo-rice && cd Gentoo-rice && ./install.sh
 ```
 
+```sh
+./install.sh --dry-run   # only show what would be installed/changed (no sudo, no changes)
+```
+
 Run as a normal user – `sudo`/`doas` is only used for system steps.
+Every run is logged to `~/.cache/gentoo-rice/install.log`. Before building, emerge does a `--pretend` dry run; required USE/keyword/license changes are written automatically (autounmask + `etc-update --automode -5`). If the batch fails, packages are retried one by one and all failures are listed at the end.
 The script can be run repeatedly; unavailable packages are reported and skipped.
 Existing configs are backed up to `~/.config-backup/gentoo-rice/<date>/`.
 

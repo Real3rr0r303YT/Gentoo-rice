@@ -34,6 +34,16 @@ WALLPAPER_DIR="$HOME/Pictures/wallpapers"
 BACKUP_ROOT="$HOME/.config-backup/gentoo-rice"
 PROFILE_BEGIN="# >>> gentoo-rice >>>"
 PROFILE_END="# <<< gentoo-rice <<<"
+# Hyprland-Autostart auf TTY1 (entfällt, wenn der Login-Screen eingerichtet ist)
+PROFILE_SNIPPET="$PROFILE_BEGIN
+if [ -z \"\${WAYLAND_DISPLAY:-}\" ] && [ \"\$(tty)\" = \"/dev/tty1\" ]; then
+    if command -v start-hyprland >/dev/null 2>&1; then exec dbus-run-session start-hyprland
+    else exec dbus-run-session Hyprland; fi
+fi
+$PROFILE_END"
+# Login-Screen (SDDM): Zustand + Backups (root-Dateien)
+LOGIN_STATE=/var/lib/gentoo-rice
+LOGIN_MARKER=$LOGIN_STATE/login-screen
 # Zusätzliche (dynamische) Links, z. B. Firefox-Profil – relativ zu $HOME
 EXTRA_LINKS_FILE="$HOME/.local/state/gentoo-rice/extra-links"
 FASTFETCH_BEGIN="# >>> gentoo-rice fastfetch >>>"

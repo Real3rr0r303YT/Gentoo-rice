@@ -13,6 +13,12 @@ warn() { printf '  %s!%s %s\n' "$Y" "$N" "$*"; }
 trap 'printf "%s✘ Fehler bei: %s%s\n" "$R$B" "$BASH_COMMAND" "$N" >&2' ERR
 [[ $EUID -ne 0 ]] || { echo "Bitte als normaler Benutzer starten."; exit 1; }
 
+# Login-Screen (SDDM) zuerst zurückbauen, falls eingerichtet
+if [[ -f $LOGIN_MARKER ]]; then
+    printf '%sLogin-Screen entfernen%s\n' "$B" "$N"
+    "$REPO/scripts/login-screen-uninstall.sh" || warn "login-screen-uninstall.sh fehlgeschlagen"
+fi
+
 # Alle verwalteten Pfade (relativ zu $HOME): feste Links + dynamische (Firefox-Profil)
 RELS=()
 for entry in "${LINKS[@]}"; do RELS+=("${entry#*|}"); done

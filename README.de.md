@@ -22,6 +22,7 @@ Wallpaper-basiertes **Anime-/Lofi**-Hyprland-Rice für **Gentoo (OpenRC)** – a
 - **Wallpaper Engine** Live-Wallpaper aus Steam (optional, `./install.sh --we`)
 - **Terminal-Spielzeug** als schwebende Fenster: cava, btop, cmatrix, tty-clock, fastfetch (Gentoo-Logo), Songtext-Overlay (sptlrx)
 - **hyprlock** in denselben dynamischen Farben, zeigt den aktuellen Song
+- **Login-Screen** (optional, `--login`): SDDM im Rice-Look oder im Klötzchen-Stil, hyprlock passend dazu
 - **Claude Code** standardmäßig über den offiziellen nativen Installer (`Super + K` öffnet es im Terminal)
 - **Firefox**, rofi-Launcher, mako-Benachrichtigungen, Papirus-Icons
 - **Sauberer Mauszeiger:** Bibata über hyprcursor (scharf bei jeder Skalierung), verschwindet beim Tippen und nach 5 s Inaktivität, lineare Mausbeschleunigung, Zwei-Finger-Rechtsklick, sanfteres Touchpad-Scrollen
@@ -37,6 +38,7 @@ git clone https://github.com/Real3rr0r303YT/Gentoo-rice && cd Gentoo-rice && ./i
 ```sh
 ./install.sh --dry-run   # nur anzeigen, was installiert/geändert würde (kein sudo, keine Änderungen)
 ./install.sh --no-claude # ohne Claude Code
+./install.sh --login     # mit grafischem Login-Screen (SDDM)
 ```
 
 Als normaler Benutzer starten – `sudo`/`doas` wird nur für Systemschritte genutzt.
@@ -103,6 +105,46 @@ Installiert die Build-Abhängigkeiten per emerge, klont das Repo mit Submodulen 
 - Benutzer-Eigenschaften aus der Wallpaper-Engine-Oberfläche werden nicht automatisch übernommen
 - Pausieren hält den Prozess an (SIGSTOP) – das letzte Bild bleibt sichtbar
 - Es werden keine Wallpaper oder Workshop-Inhalte mitgeliefert
+
+## Login-Screen (optional)
+
+Grafischer Login mit **SDDM** im Wayland-Modus (Greeter läuft in Weston, deutsche Tastatur) statt Login auf TTY1:
+
+```sh
+./install.sh --login              # Rice + Login-Screen (Theme gentoo-rice)
+./install.sh --login=minecraft    # Klötzchen-Look
+./scripts/login-screen.sh --theme gentoo-rice   # nur Login-Screen
+```
+
+| `gentoo-rice` | `gentoo-rice-blocks` |
+|---|---|
+| ![Login gentoo-rice](screenshots/login-gentoo-rice.jpg) | ![Login Klötzchen](screenshots/login-blocks.jpg) |
+
+| Theme | Aussehen |
+|---|---|
+| `gentoo-rice` | aktuelles Wallpaper unscharf, Farben aus der Palette (pywal16 bzw. aktives Theme), große Uhr + Datum, runder Avatar, Glas-Passwortfeld, Sitzungsauswahl (Hyprland vorausgewählt), Neustart/Herunterfahren |
+| `gentoo-rice-blocks` (`--login=minecraft`) | Pixel-Schrift, Fels-/Erde-Texturen, Klötzchen-Buttons – alle Grafiken selbst erzeugt (`tools/gen-pixel-textures.py`), keine fremden Texturen, Logos oder Schriften |
+
+- **Avatar:** Bild als `~/.face` speichern (sonst Platzhalter mit Initiale), dann `scripts/sddm-sync.sh`
+- Wallpaper, Farben und Avatar werden bei jedem Wallpaper-/Theme-Wechsel automatisch nach `/var/lib/gentoo-rice/sddm/` übertragen; **hyprlock** nutzt denselben Stil und Avatar
+- Sitzung „Hyprland (Gentoo-rice)“ startet Hyprland mit dbus-Sitzungsbus (OpenRC)
+- Der TTY1-Autostart wird entfernt, damit Hyprland nicht doppelt startet
+- OpenRC: `gui-libs/display-manager-init`, `DISPLAYMANAGER="sddm"` in `/etc/conf.d/display-manager`, `display-manager` im Runlevel `default`
+- Ohne Weston fällt SDDM auf X11 zurück
+- Jede geänderte Systemdatei wird gesichert (`/var/lib/gentoo-rice/backup/`)
+
+**Rückgängig:** `./scripts/login-screen-uninstall.sh` – nimmt `display-manager` aus dem Runlevel, spielt alle Dateien zurück und stellt den TTY1-Autostart wieder her.
+
+### Notausgang
+
+Startet der Login-Screen nicht (schwarzer Bildschirm, Absturz):
+
+1. `Strg + Alt + F2` drücken → auf der Textkonsole einloggen
+2. `sudo rc-update del display-manager default`
+3. `sudo reboot` → Login wieder auf TTY1
+4. Danach in Ruhe: `./scripts/login-screen-uninstall.sh`
+
+Tipp: Login-Theme ohne Neustart ansehen: `pip install PySide6-Essentials` und `QT_QPA_PLATFORM=offscreen python3 tools/sddm-preview.py sddm/gentoo-rice vorschau.png`
 
 ## Themes
 
@@ -232,10 +274,13 @@ themes/      Theme-Vorlagen (theme.conf)
 fastfetch/   config.jsonc
 firefox/     user.js, userChrome.css, policies.json
 gtk/         gtk-3.0 / gtk-4.0 settings.ini
+sddm/        Login-Themes gentoo-rice und gentoo-rice-blocks (QML)
 vscode/      settings.json, code-flags.conf
 wallpapers/  3 generierte Verlaufs-Platzhalter
 config/      wallpaperengine.conf (Vorlage)
-scripts/     wallpaper.sh, wallpaper-picker.sh, theme.sh, theme-picker.sh, we-set.sh, install-claude-code.sh, …
+scripts/     wallpaper.sh, theme.sh, login-screen.sh, sddm-sync.sh, we-set.sh, install-claude-code.sh, …
+tools/       sddm-preview.py, gen-pixel-textures.py
+.github/     CI: ShellCheck, JSON, Lua, qmllint + Render-Test der SDDM-Themes
 ```
 
 ## Unterstützen

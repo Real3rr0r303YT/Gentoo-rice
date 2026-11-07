@@ -166,6 +166,32 @@ emerge_pkgs() {
     return 0
 }
 
+# Keywords für das Hyprland-Ökosystem (install.sh, update.sh)
+hypr_keywords() { # Keywords für alle hypr*-Pakete aller Repos (sortiert)
+    local r p d cp e
+    local -A kw=() from=()
+    for r in $(portageq get_repos / 2>/dev/null); do
+        p=$(repo_path "$r"); [[ -d $p ]] || continue
+        for d in "$p"/*/hypr* "$p"/*/aquamarine "$p"/*/xdg-desktop-portal-hyprland; do
+            { [[ -d $d ]] && compgen -G "$d/*.ebuild" >/dev/null; } || continue
+            cp=${d#"$p"/}
+            from[$cp]="${from[$cp]:+${from[$cp]},}$r"
+            [[ ${kw[$cp]:-} == "~amd64" ]] || kw[$cp]="**"
+            for e in "$d"/*.ebuild; do [[ $e == *-9999.ebuild ]] || { kw[$cp]="~amd64"; break; }; done
+        done
+    done
+    for cp in "${!kw[@]}"; do printf '%-42s %-7s # %s\n' "$cp" "${kw[$cp]}" "${from[$cp]}"; done | sort
+}
+keywords_file() {
+    echo "# Gentoo-rice – automatisch erzeugt von install.sh"
+    echo "# Hyprland-Ökosystem (Repo-Herkunft als Kommentar)"
+    hypr_keywords
+    echo "# Abhängigkeiten / Gaming"
+    printf '%-42s %s\n' dev-cpp/sdbus-c++ "~amd64" dev-cpp/glaze "~amd64" \
+        games-util/mangohud "~amd64" games-util/gamemode "~amd64" \
+        gui-apps/swww "~amd64" gui-apps/awww "~amd64" gui-apps/mpvpaper "~amd64"
+}
+
 bashrc_block() { # bashrc_block <name> <inhalt>  – Block mit Markern in ~/.bashrc (ersetzt alten)
     local begin="# >>> gentoo-rice $1 >>>" end="# <<< gentoo-rice $1 <<<" f="$HOME/.bashrc"
     touch "$f"

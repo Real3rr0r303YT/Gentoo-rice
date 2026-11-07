@@ -63,6 +63,23 @@ Only three self-generated gradient placeholders ship with the repo – no third-
 
 `Super + G` opens Steam. Launch options for games: `gamemoderun mangohud %command%`
 
+### Updating
+
+```sh
+./scripts/update.sh            # rice: git pull, check links, colors, reload Hyprland/Waybar (no sudo)
+./scripts/update.sh --system   # also Gentoo (emerge @world, incl. Hyprland) + Flatpaks
+```
+
+### GRUB boot menu
+
+```sh
+./scripts/grub-setup.sh               # menu visible for 5 s, Windows entry via os-prober
+./scripts/grub-setup.sh --timeout 10  # different timeout
+./scripts/grub-setup.sh --restore     # restore the original /etc/default/grub
+```
+
+Sets `GRUB_TIMEOUT`, `GRUB_TIMEOUT_STYLE=menu` and `GRUB_DISABLE_OS_PROBER=false`, backs up `/etc/default/grub` first and regenerates `/boot/grub/grub.cfg`. Also via `./install.sh --grub`.
+
 ### Uninstall
 
 ```sh

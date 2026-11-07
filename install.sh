@@ -6,7 +6,7 @@ set -Eeuo pipefail
 
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-DEV=0 WE=0 DRY_RUN=0 CLAUDE=1 LOGIN=0 LOGIN_THEME=gentoo-rice
+DEV=0 WE=0 DRY_RUN=0 CLAUDE=1 LOGIN=0 LOGIN_THEME=gentoo-rice GRUB=0
 for arg in "$@"; do
     case $arg in
         --dev)     DEV=1 ;;
@@ -15,11 +15,13 @@ for arg in "$@"; do
         --no-claude) CLAUDE=0 ;;
         --login|--login=default|--login=gentoo-rice) LOGIN=1 LOGIN_THEME=gentoo-rice ;;
         --login=minecraft|--login=blocks) LOGIN=1 LOGIN_THEME=gentoo-rice-blocks ;;
+        --grub)    GRUB=1 ;;
         -h|--help)
-            printf 'Nutzung: ./install.sh [--dev] [--we] [--login[=minecraft]] [--no-claude] [--dry-run]\n'
+            printf 'Nutzung: ./install.sh [--dev] [--we] [--login[=minecraft]] [--grub] [--no-claude] [--dry-run]\n'
             printf '  --dev      zusätzlich Entwickler-Setup (scripts/dev-setup.sh)\n'
             printf '  --we       zusätzlich Wallpaper Engine (scripts/wallpaperengine.sh)\n'
             printf '  --login    grafischer Login-Screen (SDDM, Wayland); --login=minecraft für den Klötzchen-Look\n'
+            printf '  --grub     GRUB-Menü 5 s sichtbar + Windows-Eintrag (scripts/grub-setup.sh)\n'
             printf '  --no-claude  Claude Code nicht installieren\n'
             printf '  --dry-run  nur anzeigen, was installiert/geändert würde (keine Änderungen)\n'
             exit 0 ;;
@@ -27,7 +29,7 @@ for arg in "$@"; do
     esac
 done
 
-TOTAL=$((14 + CLAUDE + LOGIN + DEV + WE))
+TOTAL=$((14 + CLAUDE + LOGIN + GRUB + DEV + WE))
 KW_FILE=/etc/portage/package.accept_keywords/gentoo-rice-auto
 # shellcheck source=scripts/links.sh
 source "$REPO/scripts/links.sh"
@@ -570,6 +572,13 @@ if [[ $LOGIN -eq 1 ]]; then
             ok "TTY1-Autostart in ~/.bash_profile"
         fi
     fi
+fi
+
+# ── GRUB (optional) ────────────────────────────────────────
+if [[ $GRUB -eq 1 ]]; then
+    step "GRUB-Bootmenü (5 s, Windows-Eintrag)"
+    if "$REPO/scripts/grub-setup.sh" --timeout 5; then DONE+=("GRUB: Menü 5 s sichtbar, Windows über os-prober")
+    else warn "GRUB-Einrichtung fehlgeschlagen"; FAILED+=("GRUB (einzeln: ./scripts/grub-setup.sh)"); fi
 fi
 
 # ── Wallpaper Engine (optional) ────────────────────────────

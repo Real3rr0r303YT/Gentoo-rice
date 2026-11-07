@@ -2,8 +2,10 @@
 # Gentoo-rice – Rice (und optional das System) aktualisieren
 # Copyright (C) 2026 3rr0r303YT – GPL-3.0-or-later
 #
-# Nutzung: ./scripts/update.sh            Rice: git pull, Links prüfen, Farben, Hyprland/Waybar/mako neu laden
-#          ./scripts/update.sh --system   zusätzlich: Portage-Sync + emerge @world (inkl. Hyprland) + Flatpaks
+# Nutzung: ./scripts/update.sh            Rice: git pull, Links prüfen, Farben, Hyprland/Waybar/mako neu laden;
+#                                         installiert Hyprland (+ hyprlock, hypridle, Portal), falls es fehlt
+#          ./scripts/update.sh --system   zusätzlich: Hyprland auf die neueste Version, Portage-Sync,
+#                                         emerge @world + Flatpaks
 set -Eeuo pipefail
 
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -11,14 +13,23 @@ SYSTEM=0
 for arg in "$@"; do
     case $arg in
         --system) SYSTEM=1 ;;
-        -h|--help) sed -n '2,7p' "$0"; exit 0 ;;
+        -h|--help) sed -n '2,8p' "$0"; exit 0 ;;
         *) printf 'Unbekannte Option: %s\n' "$arg" >&2; exit 1 ;;
     esac
 done
 
-TOTAL=$((4 + SYSTEM * 2)) STEP_LABEL=update
-# Ohne --system wird kein sudo gebraucht → keine Passwortabfrage
-if ((SYSTEM == 0)); then export GENTOO_RICE_SUDO_LOOP=1; fi
+# Hyprland-Kern: wird installiert, falls etwas fehlt (mit --system auch aktualisiert)
+HYPR_PKGS=(gui-wm/hyprland gui-apps/hyprlock gui-apps/hypridle gui-libs/xdg-desktop-portal-hyprland)
+HYPR_MISSING=()
+for p in "${HYPR_PKGS[@]}"; do
+    portageq has_version / "$p" 2>/dev/null || HYPR_MISSING+=("$p")
+done
+HYPR_STEP=0
+if ((SYSTEM)) || ((${#HYPR_MISSING[@]})); then HYPR_STEP=1; fi
+
+TOTAL=$((4 + HYPR_STEP + SYSTEM * 2)) STEP_LABEL=update KW_FILE=/etc/portage/package.accept_keywords/gentoo-rice-auto
+# sudo nur, wenn emerge gebraucht wird → sonst keine Passwortabfrage
+if ((HYPR_STEP == 0)); then export GENTOO_RICE_SUDO_LOOP=1; fi
 # shellcheck source=scripts/links.sh
 source "$REPO/scripts/links.sh"
 # shellcheck source=scripts/lib.sh
@@ -55,6 +66,32 @@ fi
 after=$(git rev-parse --short HEAD)
 if [[ $before == "$after" ]]; then ok "bereits aktuell ($after)"
 else ok "$before → $after"; git --no-pager log --oneline "$before..$after" | sed 's/^/    /' | head -15; fi
+
+# ── Hyprland installieren / aktualisieren ─────────────────
+if ((HYPR_STEP)); then
+    step "Hyprland installieren/aktualisieren"
+    as_dir package.accept_keywords
+    keywords_file | write_root /etc/portage/package.accept_keywords/gentoo-rice
+    if ((${#HYPR_MISSING[@]})); then
+        info "fehlt: ${HYPR_MISSING[*]}"
+        emerge_pkgs "${HYPR_MISSING[@]}"
+    fi
+    if ((SYSTEM)); then
+        info "Hyprland-Pakete auf die neueste Version …"
+        $SUDO emaint sync -a >>"$LOG" 2>&1 || warn "emaint sync mit Fehlern (Details im Log)"
+        keywords_file | write_root /etc/portage/package.accept_keywords/gentoo-rice
+        $SUDO "${EMERGE_BASE[@]}" "${AUTOUNMASK_WRITE[@]/--noreplace/--update}" --newuse "${HYPR_PKGS[@]}" >>"$LOG" 2>&1 || true
+        $SUDO etc-update --automode -5 /etc/portage >>"$LOG" 2>&1 || true
+        if ! $SUDO "${EMERGE_BASE[@]}" "${EMERGE_OPTS[@]/--noreplace/--update}" --newuse "${HYPR_PKGS[@]}"; then
+            warn "Hyprland-Update mit Fehlern"; FAILED+=("Hyprland-Update (Details: $LOG)")
+        fi
+    fi
+    if portageq has_version / gui-wm/hyprland 2>/dev/null; then
+        ok "$(Hyprland --version 2>/dev/null | head -n1 || echo 'Hyprland installiert')"
+    else
+        warn "Hyprland ist nicht installiert – Details im Log"; FAILED+=("gui-wm/hyprland")
+    fi
+fi
 
 # ── 2. Links & generierte Dateien ─────────────────────────
 step "Config-Links prüfen"
@@ -104,8 +141,7 @@ fi
 
 # ── 5./6. System (optional) ───────────────────────────────
 if ((SYSTEM)); then
-    step "Gentoo aktualisieren (Sync + @world, inkl. Hyprland)"
-    $SUDO emaint sync -a >>"$LOG" 2>&1 || warn "emaint sync mit Fehlern (Details im Log)"
+    step "Gentoo aktualisieren (@world)"
     if $SUDO "${EMERGE_BASE[@]}" --update --deep --newuse --getbinpkg --binpkg-respect-use=y --keep-going=y \
         --autounmask=y --autounmask-use=y --autounmask-license=y --autounmask-continue=y --quiet-build=y @world; then
         ok "@world aktuell"

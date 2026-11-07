@@ -50,7 +50,7 @@ mkconfig() {
     grep -iE 'found|warn' "$tmp" | sed 's/^/  · /' || true
     rm -f "$tmp"
     if $SUDO grep -qiE "menuentry ['\"]?Windows" "$out"; then ok "Windows-Eintrag im Bootmenü"
-    else warn "Kein Windows-Eintrag gefunden – ist die Windows-Partition erreichbar? (os-prober, ntfs3)"; fi
+    else info "Kein Windows gefunden (normal, wenn nur Gentoo installiert ist)"; fi
     ok "Bootmenü geschrieben: $out"
 }
 

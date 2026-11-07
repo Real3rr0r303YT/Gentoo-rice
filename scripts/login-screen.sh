@@ -77,12 +77,14 @@ as_dir package.use; as_dir package.accept_keywords
 $SUDO touch "$KW_FILE"
 write_root /etc/portage/package.use/gentoo-rice-login <<'EOF'
 # Gentoo-rice – Login-Screen
+gui-apps/sddm elogind
 x11-misc/sddm elogind
 dev-libs/weston kiosk drm
 EOF
-emerge_pkgs x11-misc/sddm gui-libs/display-manager-init
+# SDDM liegt seit 2026 unter gui-apps/sddm (vorher x11-misc/sddm)
+emerge_pkgs "gui-apps/sddm|x11-misc/sddm" gui-libs/display-manager-init
 emerge_pkgs --optional dev-libs/weston dev-qt/qtwayland
-installed x11-misc/sddm || die "SDDM (x11-misc/sddm) konnte nicht installiert werden – Details: $LOG"
+{ installed gui-apps/sddm || installed x11-misc/sddm; } || die "SDDM (gui-apps/sddm) konnte nicht installiert werden – Details: $LOG"
 installed gui-libs/display-manager-init || die "gui-libs/display-manager-init fehlt – Details: $LOG"
 ok "SDDM installiert"
 

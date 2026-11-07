@@ -63,6 +63,23 @@ Mitgeliefert werden nur drei selbst generierte Verlaufs-Platzhalter – keine fr
 
 `Super + G` öffnet Steam. Startoptionen für Spiele: `gamemoderun mangohud %command%`
 
+### Aktualisieren
+
+```sh
+./scripts/update.sh            # Rice: git pull, Links prüfen, Farben, Hyprland/Waybar neu laden (kein sudo)
+./scripts/update.sh --system   # zusätzlich Gentoo (emerge @world, inkl. Hyprland) + Flatpaks
+```
+
+### GRUB-Bootmenü
+
+```sh
+./scripts/grub-setup.sh               # Menü 5 s sichtbar, Windows-Eintrag über os-prober
+./scripts/grub-setup.sh --timeout 10  # andere Wartezeit
+./scripts/grub-setup.sh --restore     # Original von /etc/default/grub zurück
+```
+
+Setzt `GRUB_TIMEOUT`, `GRUB_TIMEOUT_STYLE=menu` und `GRUB_DISABLE_OS_PROBER=false`, sichert vorher `/etc/default/grub` und schreibt `/boot/grub/grub.cfg` neu. Auch per `./install.sh --grub`.
+
 ### Deinstallation
 
 ```sh

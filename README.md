@@ -66,8 +66,9 @@ Only three self-generated gradient placeholders ship with the repo – no third-
 ### Updating
 
 ```sh
-./scripts/update.sh            # rice: git pull, check links, colors, reload Hyprland/Waybar (no sudo)
-./scripts/update.sh --system   # also Gentoo (emerge @world, incl. Hyprland) + Flatpaks
+./scripts/update.sh            # rice: git pull, check links, colors, reload Hyprland/Waybar
+                               # installs Hyprland, hyprlock, hypridle + portal if anything is missing
+./scripts/update.sh --system   # also Hyprland to the latest version, Gentoo (@world) + Flatpaks
 ```
 
 ### GRUB boot menu

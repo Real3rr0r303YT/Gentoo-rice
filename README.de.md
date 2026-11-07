@@ -66,8 +66,9 @@ Mitgeliefert werden nur drei selbst generierte Verlaufs-Platzhalter – keine fr
 ### Aktualisieren
 
 ```sh
-./scripts/update.sh            # Rice: git pull, Links prüfen, Farben, Hyprland/Waybar neu laden (kein sudo)
-./scripts/update.sh --system   # zusätzlich Gentoo (emerge @world, inkl. Hyprland) + Flatpaks
+./scripts/update.sh            # Rice: git pull, Links prüfen, Farben, Hyprland/Waybar neu laden
+                               # installiert Hyprland, hyprlock, hypridle + Portal, falls etwas fehlt
+./scripts/update.sh --system   # zusätzlich Hyprland auf neueste Version, Gentoo (@world) + Flatpaks
 ```
 
 ### GRUB-Bootmenü

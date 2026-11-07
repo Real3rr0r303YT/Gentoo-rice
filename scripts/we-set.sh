@@ -9,7 +9,7 @@ source "$DIR/we-lib.sh"
 mkdir -p "$WE_STATE"
 LOG="$WE_STATE/linux-wallpaperengine.log"
 
-notify() { command -v notify-send >/dev/null && notify-send -a "Wallpaper Engine" "$@" || true; }
+notify() { if command -v notify-send >/dev/null; then notify-send -a "Wallpaper Engine" "$@" || true; fi; }
 fail() { # fail <meldung> [vorschau] – Fehler melden, auf swww mit Vorschaubild zurückfallen
     notify -u critical "Wallpaper Engine" "$1"
     echo "Fehler: $1" >&2

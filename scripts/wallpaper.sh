@@ -19,7 +19,7 @@ list_walls() {
         -o -iname '*.webp' -o -iname '*.gif' -o -iname '*.mp4' -o -iname '*.mkv' -o -iname '*.webm' \
         -o -iname '*.mov' -o -iname '*.avi' -o -iname '*.m4v' \) 2>/dev/null | sort
 }
-notify() { command -v notify-send >/dev/null && notify-send -a Wallpaper "$@" || true; }
+notify() { if command -v notify-send >/dev/null; then notify-send -a Wallpaper "$@" || true; fi; }
 
 # Standbild (für Farben + hyprlock) nach $STATE/current.png
 still() {

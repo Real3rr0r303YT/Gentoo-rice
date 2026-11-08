@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Gentoo-rice – Extra-Apps (Flatpak; Mullvad VPN über GURU mit sudo):
 #   Spotify + Spicetify (Theme in den Rice-Farben), Gaming (Minecraft Java, CurseForge, Sober),
-#   OpSec (Mullvad VPN, Proton Pass/Mail/Calendar/Authenticator, Tor Browser, Signal), OBS Studio
+#   OpSec (Mullvad VPN, Proton Pass/Mail/Calendar/Authenticator, Tor Browser, Signal),
+#   Ecosystem (KDE Connect fürs Handy), OBS Studio, Roblox Studio (Vinegar)
 # Copyright (C) 2026 3rr0r303YT – GPL-3.0-or-later
 #
 # Nutzung: ./scripts/apps.sh               alles installieren/aktualisieren
@@ -20,6 +21,7 @@ GAMING_APPS=(
     "com.mojang.Minecraft|Minecraft Java (offizieller Launcher)|Mit dem Microsoft-Konto anmelden, Java Edition starten|0"
     "com.overwolf.curseforge|CurseForge (Mods/Modpacks)|Minecraft-Modpacks installieren|1"
     "org.vinegarhq.Sober|Sober (Roblox)|Beim ersten Start mit dem Roblox-Konto anmelden|0"
+    "org.vinegarhq.Vinegar|Vinegar (Roblox Studio)|Erster Start lädt Roblox Studio herunter (läuft über Wine)|0"
 )
 OPSEC_APPS=(
     "me.proton.Pass|Proton Pass|Passwort-Manager|1"
@@ -28,6 +30,9 @@ OPSEC_APPS=(
     "org.torproject.torbrowser-launcher,com.github.micahflee.torbrowser-launcher|Tor Browser|Erster Start lädt den Tor Browser herunter|0"
     "org.signal.Signal|Signal|Messenger mit Ende-zu-Ende-Verschlüsselung|0"
 )
+# Handy-Verbindung (Dateien, Zwischenablage, Benachrichtigungen, Medien): KDE Connect, sonst Valent
+ECO_PKG=kde-misc/kdeconnect
+ECO_FLATPAK="ca.andyholmes.Valent|Valent (KDE-Connect-kompatibel)|Auf dem Handy die App KDE Connect installieren, gleiches WLAN|0"
 # ersetzt/abgewählt → werden entfernt, falls noch installiert
 REMOVED_APPS=( com.protonvpn.www org.prismlauncher.PrismLauncher )
 MULLVAD_PKG=net-vpn/mullvadvpn-app   # GURU (Binärpaket der offiziellen App)
@@ -50,7 +55,7 @@ if [[ $MODE == sync ]]; then
 fi
 
 TOTAL=1 STEP_LABEL=apps KW_FILE=/etc/portage/package.accept_keywords/gentoo-rice-apps
-if [[ $MODE == all ]]; then TOTAL=6
+if [[ $MODE == all ]]; then TOTAL=7
 elif [[ $MODE == update ]]; then TOTAL=2; export GENTOO_RICE_SUDO_LOOP=1
 else export GENTOO_RICE_SUDO_LOOP=1; fi   # sudo nur für Mullvad (emerge)
 # shellcheck source=scripts/lib.sh
@@ -93,17 +98,9 @@ mullvad() {
         warn "Mullvad VPN nicht installiert – Alternative: https://mullvad.net/download/vpn/linux"
         return 0
     fi
-    local s svc=""
-    for s in mullvad-daemon mullvadvpn-daemon mullvad; do
-        if [[ -x /etc/init.d/$s ]]; then svc=$s; break; fi
-    done
-    if [[ -n $svc ]]; then
-        $SUDO rc-update add "$svc" default >>"$LOG" 2>&1 || true
-        $SUDO rc-service "$svc" start >>"$LOG" 2>&1 || true
-        ok "Mullvad-Dienst ($svc) läuft und startet beim Booten"
-    else
-        warn "Kein OpenRC-Dienst für Mullvad gefunden – Daemon: sudo mullvad-daemon &"
-    fi
+    # Dienst einrichten (legt einen OpenRC-Dienst an, falls das Paket keinen mitbringt)
+    if "$REPO/scripts/mullvad.sh" setup; then ok "Mullvad-Dienst läuft"
+    else warn "Mullvad-Dienst: ./scripts/mullvad.sh status"; FAILED+=("Mullvad-Dienst"); fi
     info "Start: Rofi → Mullvad VPN → Kontonummer eingeben → Verbinden"
 }
 
@@ -198,6 +195,14 @@ if [[ $MODE == all ]]; then
     # Paket-Suche für den App-Store (Super+Shift+A)
     emerge_pkgs app-portage/eix
     if command -v eix-update >/dev/null; then $SUDO eix-update >>"$LOG" 2>&1 || true; fi
+    step "Ecosystem: Handy verbinden (KDE Connect)"
+    emerge_pkgs --optional "$ECO_PKG"
+    if installed "$ECO_PKG"; then
+        ok "KDE Connect installiert – startet mit Hyprland"
+        info "Handy: App 'KDE Connect' (Play Store/F-Droid) → gleiches WLAN → PC koppeln"
+    else
+        app_list "$ECO_FLATPAK"
+    fi
     step "OBS Studio"
     app_list "${MEDIA_APPS[@]}"
 fi

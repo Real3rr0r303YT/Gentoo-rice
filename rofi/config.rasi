@@ -9,6 +9,10 @@ configuration {
     display-window: "";
     disable-history: false;
     hover-select: true;
+    /* Maus: Klick öffnet direkt, Rechtsklick markiert, Mausrad scrollt weich */
+    me-select-entry: "MouseSecondary";
+    me-accept-entry: "MousePrimary";
+    scroll-method: 1;
 }
 
 @import "~/.cache/wal/colors-rice.rasi"
@@ -41,7 +45,8 @@ inputbar {
 prompt { text-color: @accent; }
 entry { placeholder: "Suchen…"; placeholder-color: @muted; }
 
-listview { lines: 8; columns: 1; spacing: 4px; scrollbar: false; fixed-height: false; }
+listview { lines: 8; columns: 1; spacing: 4px; scrollbar: true; fixed-height: false; }
+scrollbar { handle-width: 5px; handle-color: @accent; border-radius: 5px; background-color: transparent; margin: 0 0 0 6px; }
 
 element { padding: 8px 12px; spacing: 12px; border-radius: 8px; }
 element selected.normal { background-color: @accent; text-color: @bg-solid; }

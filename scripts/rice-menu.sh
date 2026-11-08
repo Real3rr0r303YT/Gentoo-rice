@@ -51,6 +51,7 @@ choice=$(printf '%s\n' \
     "󰕥  Virenschutz installieren/aktualisieren" \
     "󰕥  Virenscan (Home)" \
     "󰨟  Quarantäne öffnen" \
+    "󰍹  Virtuelle Maschinen (Windows/Linux testen)" \
     "󰕧  OBS Studio" \
     "󰏘  Theme ändern" \
     "󰋩  Wallpaper wählen" \
@@ -71,6 +72,7 @@ case "$choice" in
     *"Roblox (Sober)")    exec flatpak run org.vinegarhq.Sober ;;
     *"Roblox Studio (Vinegar)") exec flatpak run org.vinegarhq.Vinegar ;;
     *"Handy verbinden"*)  exec "$DIR/phone.sh" open ;;
+    *"Virtuelle Maschinen"*) exec "$DIR/vm.sh" open ;;
     *"  OBS Studio")      exec flatpak run com.obsproject.Studio ;;
     *"Gaming-Modus an/aus") exec "$DIR/gaming-mode.sh" toggle ;;
     *"Virenschutz installieren/aktualisieren") exec kitty --class rice-float --hold "$DIR/antivirus.sh" update ;;

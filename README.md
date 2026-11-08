@@ -88,6 +88,15 @@ Sets `GRUB_TIMEOUT`, `GRUB_TIMEOUT_STYLE=menu` and `GRUB_DISABLE_OS_PROBER=false
 
 **Phone ecosystem (KDE Connect):** starts with Hyprland. Install the *KDE Connect* app on your phone, same Wi-Fi, rice menu *Handy verbinden* → pair. Then: send files, shared clipboard, phone notifications on the PC, media control.
 
+### Virtual machines (test on Windows / other distros)
+
+```bash
+./scripts/vm.sh setup   # KVM + GNOME Boxes (Flatpak, no compiling) – also in the rice menu
+./scripts/vm.sh pro     # additionally virt-manager + libvirt (more options, may compile QEMU)
+```
+
+Rice menu → *Virtuelle Maschinen*. Boxes downloads Linux distros itself; for Windows get the ISO from microsoft.com/software-download/windows11 and pick it in Boxes. Needs "SVM Mode" (AMD) or "VT-x" (Intel) enabled in the BIOS.
+
 ### Antivirus (ClamAV)
 
 ```bash

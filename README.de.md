@@ -88,6 +88,15 @@ Setzt `GRUB_TIMEOUT`, `GRUB_TIMEOUT_STYLE=menu` und `GRUB_DISABLE_OS_PROBER=fals
 
 **Handy-Ecosystem (KDE Connect):** startet mit Hyprland. Auf dem Handy die App *KDE Connect* installieren, gleiches WLAN, im Rice-Menü *Handy verbinden* → koppeln. Dann: Dateien senden, gemeinsame Zwischenablage, Handy-Benachrichtigungen am PC, Medien steuern.
 
+### Virtuelle Maschinen (Windows / Linux-Distros testen)
+
+```bash
+./scripts/vm.sh setup   # KVM + GNOME Boxes (Flatpak, kein Kompilieren) – auch im Rice-Menü
+./scripts/vm.sh pro     # zusätzlich virt-manager + libvirt (mehr Optionen, kompiliert ggf. QEMU)
+```
+
+Rice-Menü → *Virtuelle Maschinen*. Linux-Distros lädt Boxes selbst herunter; für Windows die ISO von microsoft.com/software-download/windows11 laden und in Boxes auswählen. Braucht im BIOS „SVM Mode“ (AMD) bzw. „VT-x“ (Intel).
+
 ### Virenschutz (ClamAV)
 
 ```bash

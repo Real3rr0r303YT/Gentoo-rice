@@ -25,7 +25,6 @@ GAMING_APPS=(
 )
 OPSEC_APPS=(
     "me.proton.Pass|Proton Pass|Passwort-Manager|1"
-    "me.proton.Mail|Proton Mail|Desktop-App (mit Kalender)|1"
     "me.proton.Authenticator|Proton Authenticator|2FA-Codes|1"
     "org.torproject.torbrowser-launcher,com.github.micahflee.torbrowser-launcher|Tor Browser|Erster Start lädt den Tor Browser herunter|0"
     "org.signal.Signal|Signal|Messenger mit Ende-zu-Ende-Verschlüsselung|0"
@@ -34,7 +33,8 @@ OPSEC_APPS=(
 ECO_PKG=kde-misc/kdeconnect
 ECO_FLATPAK="ca.andyholmes.Valent|Valent (KDE-Connect-kompatibel)|Auf dem Handy die App KDE Connect installieren, gleiches WLAN|0"
 # ersetzt/abgewählt → werden entfernt, falls noch installiert
-REMOVED_APPS=( com.protonvpn.www org.prismlauncher.PrismLauncher )
+# me.proton.Mail: Desktop-App nur in bezahlten Tarifen → Web-App (kostenlos) statt dessen
+REMOVED_APPS=( com.protonvpn.www org.prismlauncher.PrismLauncher me.proton.Mail )
 MULLVAD_PKG=net-vpn/mullvadvpn-app   # GURU (Binärpaket der offiziellen App)
 MEDIA_APPS=(
     "io.github.kolunmi.Bazaar|Bazaar (grafischer App-Store für Flatpaks)|Apps durchstöbern und mit einem Klick installieren|1"
@@ -55,7 +55,7 @@ if [[ $MODE == sync ]]; then
 fi
 
 TOTAL=1 STEP_LABEL=apps KW_FILE=/etc/portage/package.accept_keywords/gentoo-rice-apps
-if [[ $MODE == all ]]; then TOTAL=7
+if [[ $MODE == all ]]; then TOTAL=8
 elif [[ $MODE == update ]]; then TOTAL=2; export GENTOO_RICE_SUDO_LOOP=1
 else export GENTOO_RICE_SUDO_LOOP=1; fi   # sudo nur für Mullvad (emerge)
 # shellcheck source=scripts/lib.sh
@@ -83,7 +83,7 @@ web_app() { # web_app <id> <name> <url> <icon>
 Type=Application
 Name=$2
 Comment=$2 (Web-App, Gentoo-rice)
-Exec=xdg-open $3
+Exec=$HOME/.local/share/gentoo-rice/scripts/webapp.sh $3
 Icon=$4
 Categories=Office;Network;
 DESK
@@ -187,9 +187,7 @@ if [[ $MODE == all ]]; then
     done
     app_list "${OPSEC_APPS[@]}"
     web_app proton-calendar "Proton Calendar" https://calendar.proton.me x-office-calendar
-    if ! flatpak info --user me.proton.Mail >/dev/null 2>&1; then
-        web_app proton-mail "Proton Mail" https://mail.proton.me mail-client
-    fi
+    web_app proton-mail "Proton Mail" https://mail.proton.me mail-client
     step "Mullvad VPN (GURU)"
     mullvad
     # Paket-Suche für den App-Store (Super+Shift+A)
@@ -203,6 +201,8 @@ if [[ $MODE == all ]]; then
     else
         app_list "$ECO_FLATPAK"
     fi
+    step "Helligkeit (Waybar, auch für externe Monitore)"
+    "$REPO/scripts/brightness.sh" setup || true
     step "OBS Studio"
     app_list "${MEDIA_APPS[@]}"
 fi

@@ -347,5 +347,5 @@ hl.bind("XF86AudioPlay",         exec("playerctl play-pause"),                  
 hl.bind("XF86AudioPause",        exec("playerctl play-pause"),                             { locked = true })
 hl.bind("XF86AudioNext",         exec("playerctl next"),                                   { locked = true })
 hl.bind("XF86AudioPrev",         exec("playerctl previous"),                               { locked = true })
-hl.bind("XF86MonBrightnessUp",   exec("brightnessctl -e4 -n2 set 5%+"),                    { locked = true, repeating = true })
-hl.bind("XF86MonBrightnessDown", exec("brightnessctl -e4 -n2 set 5%-"),                    { locked = true, repeating = true })
+hl.bind("XF86MonBrightnessUp",   exec(scripts .. "/brightness.sh up"),                     { locked = true, repeating = true })
+hl.bind("XF86MonBrightnessDown", exec(scripts .. "/brightness.sh down"),                   { locked = true, repeating = true })

@@ -153,9 +153,13 @@ if ((SYSTEM)); then
     Hyprland --version 2>/dev/null | head -n1 | sed 's/^/  · /' || true
     "$REPO/scripts/hypr-version.sh" || true
 
-    step "Flatpaks (Steam, Bottles …)"
+    step "Flatpaks (Steam, Spotify, Minecraft …)"
     if command -v flatpak >/dev/null; then
         if flatpak update --user -y --noninteractive >>"$LOG" 2>&1; then ok "Flatpaks aktuell"; else warn "flatpak update mit Fehlern"; fi
+        # Spotify-Updates entfernen Spicetify → neu anwenden
+        if command -v spicetify >/dev/null || [[ -x $HOME/.local/bin/spicetify ]]; then
+            if "$REPO/scripts/apps.sh" spicetify >>"$LOG" 2>&1; then ok "Spicetify neu angewendet"; else warn "Spicetify: ./scripts/apps.sh spicetify"; fi
+        fi
     else
         info "flatpak nicht installiert"
     fi

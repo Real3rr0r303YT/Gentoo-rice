@@ -1,0 +1,28 @@
+/* Gentoo-rice – Spicetify-Theme (Farben: ~/.cache/wal/spicetify-color.ini) */
+:root {
+    --rice-radius: 12px;
+}
+.main-card-card,
+.main-trackList-trackListRow,
+.main-entityHeader-image,
+.main-coverSlotExpanded-container,
+.Root__nav-bar .main-rootlist-wrapper {
+    border-radius: var(--rice-radius) !important;
+}
+.Root__main-view,
+.Root__nav-bar,
+.Root__right-sidebar {
+    border-radius: var(--rice-radius);
+}
+.main-nowPlayingBar-container {
+    border-top: 1px solid var(--spice-highlight);
+}
+.encore-dark-theme .encore-bright-accent-set,
+.main-playButton-PlayButton button {
+    background-color: var(--spice-button) !important;
+    color: var(--spice-main) !important;
+}
+.x-progressBar-fillColor,
+.progress-bar__fg {
+    background-color: var(--spice-button) !important;
+}

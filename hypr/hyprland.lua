@@ -97,6 +97,7 @@ hl.on("hyprland.start", function()
     hl.exec_cmd("waybar")
     hl.exec_cmd("mako -c " .. home .. "/.cache/wal/mako-config")
     hl.exec_cmd("hypridle")
+    hl.exec_cmd(scripts .. "/antivirus.sh watch")
     hl.exec_cmd(scripts .. "/polkit.sh")
 end)
 

@@ -169,6 +169,18 @@ if [[ $MODE == all ]]; then
     flatpak_app "$SPOTIFY_ID" "Spotify" || true
     step "Gaming: Minecraft Java, CurseForge, Sober (Roblox)"
     app_list "${GAMING_APPS[@]}"
+    # Sandbox: Spiele/Mods kommen nicht an den Home-Ordner (Schutz vor Schad-Mods/Ransomware)
+    for id in com.mojang.Minecraft com.overwolf.curseforge org.vinegarhq.Sober; do
+        if flatpak info --user "$id" >/dev/null 2>&1; then
+            flatpak override --user --nofilesystem=home --nofilesystem=host --filesystem=xdg-download:ro "$id" >>"$LOG" 2>&1 || true
+        fi
+    done
+    # CurseForge legt Instanzen in ~/curseforge ab → nur diesen Ordner freigeben
+    if flatpak info --user com.overwolf.curseforge >/dev/null 2>&1; then
+        mkdir -p "$HOME/curseforge"
+        flatpak override --user --filesystem="$HOME/curseforge" com.overwolf.curseforge >>"$LOG" 2>&1 || true
+    fi
+    ok "Minecraft, CurseForge, Sober abgeschottet (kein Zugriff auf ~, Downloads nur lesen)"
     step "OpSec: Proton Pass, Proton Mail, Proton Calendar, Tor Browser, Signal"
     for id in "${REMOVED_APPS[@]}"; do
         if flatpak info --user "$id" >/dev/null 2>&1 && flatpak uninstall --user -y --noninteractive "$id" >>"$LOG" 2>&1; then

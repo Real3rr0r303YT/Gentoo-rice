@@ -153,7 +153,7 @@ if ((SYSTEM)); then
     Hyprland --version 2>/dev/null | head -n1 | sed 's/^/  · /' || true
     "$REPO/scripts/hypr-version.sh" || true
 
-    step "Flatpaks (Steam, Spotify, Minecraft …)"
+    step "Flatpaks (Steam, Spotify, Minecraft, OBS …)"
     if command -v flatpak >/dev/null; then
         if flatpak update --user -y --noninteractive >>"$LOG" 2>&1; then ok "Flatpaks aktuell"; else warn "flatpak update mit Fehlern"; fi
         # Spotify-Updates entfernen Spicetify → neu anwenden

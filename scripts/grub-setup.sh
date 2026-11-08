@@ -1,20 +1,28 @@
 #!/usr/bin/env bash
-# Gentoo-rice – GRUB-Bootmenü: blaues Theme, sichtbares Menü mit Auswahlzeit + Windows-Eintrag (os-prober)
+# Gentoo-rice – GRUB-Bootmenü: Theme (Klötzchen oder blau), sichtbares Menü mit Auswahlzeit + Windows-Eintrag (os-prober)
 # Copyright (C) 2026 3rr0r303YT – GPL-3.0-or-later
 #
-# Nutzung: ./scripts/grub-setup.sh [--timeout SEKUNDEN] [--no-theme]   (Standard: 5 s, mit Theme)
+# Nutzung: ./scripts/grub-setup.sh [--timeout SEKUNDEN] [--theme blocks|blue] [--no-theme]
+#          Standard: 5 s, Theme blocks (Klötzchen-Look)
 #          ./scripts/grub-setup.sh --restore               (Original von /etc/default/grub zurück)
 set -Eeuo pipefail
 
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-TIMEOUT=5 RESTORE=0 THEME=1
+TIMEOUT=5 RESTORE=0 THEME=1 THEME_NAME=gentoo-rice-blocks
 while (($#)); do
     case $1 in
         --timeout) TIMEOUT=${2:-}; shift ;;
         --timeout=*) TIMEOUT=${1#*=} ;;
         --restore) RESTORE=1 ;;
         --no-theme) THEME=0 ;;
-        -h|--help) sed -n '2,7p' "$0"; exit 0 ;;
+        --theme|--theme=*)
+            if [[ $1 == --theme ]]; then t=${2:-}; shift; else t=${1#*=}; fi
+            case $t in
+                blocks|minecraft) THEME_NAME=gentoo-rice-blocks ;;
+                blue|blau) THEME_NAME=gentoo-rice ;;
+                *) printf 'Unbekanntes Theme: %s (blocks|blue)\n' "$t" >&2; exit 1 ;;
+            esac ;;
+        -h|--help) sed -n '2,8p' "$0"; exit 0 ;;
         *) printf 'Unbekannte Option: %s\n' "$1" >&2; exit 1 ;;
     esac
     shift
@@ -27,8 +35,7 @@ source "$REPO/scripts/lib.sh"
 
 CFG=/etc/default/grub
 ORIG=/etc/default/grub.gentoo-rice.orig
-THEME_SRC=$REPO/grub/gentoo-rice
-THEME_DIR=""
+THEME_DIR="" THEME_FONT=""
 
 # Ausgabedatei von grub-mkconfig finden (Gentoo: /boot/grub/grub.cfg)
 grub_cfg() {
@@ -84,12 +91,40 @@ ensure_mkfont() {
 }
 
 install_theme() {
-    local cfg tmp bg="" f fr fb sz bold=()
+    local cfg tmp f font=""
     cfg=$(grub_cfg) || { warn "Kein GRUB-Verzeichnis (/boot gemountet?) – Theme übersprungen"; return 1; }
-    command -v magick >/dev/null || { warn "ImageMagick (magick) fehlt – Theme übersprungen"; return 1; }
-    THEME_DIR="$(dirname "$cfg")/themes/gentoo-rice"
+    THEME_DIR="$(dirname "$cfg")/themes/$THEME_NAME"
     tmp=$(mktemp -d)
-    cp "$THEME_SRC/theme.txt" "$tmp/"
+    cp -a "$REPO/grub/$THEME_NAME"/. "$tmp"/
+
+    if [[ $THEME_NAME == gentoo-rice ]]; then
+        theme_blue "$tmp" || { rm -rf "$tmp"; return 1; }
+        if [[ -f $tmp/rice-16.pf2 ]]; then font=rice-16.pf2; fi
+    else
+        # Klötzchen-Look: fertige Pixelbilder aus dem Repo + Unifont (Pixel-Schrift von GRUB)
+        for f in /usr/share/grub/unicode.pf2 "$(dirname "$cfg")/fonts/unicode.pf2"; do
+            if $SUDO test -s "$f"; then $SUDO cat "$f" > "$tmp/unifont.pf2"; break; fi
+        done
+        if [[ ! -s $tmp/unifont.pf2 ]] && ensure_mkfont && [[ -s /usr/share/grub/unicode.pf2 ]]; then
+            cp /usr/share/grub/unicode.pf2 "$tmp/unifont.pf2"
+        fi
+        if [[ -s $tmp/unifont.pf2 ]]; then font=unifont.pf2; ok "Schrift: Unifont (Pixel)"
+        else rm -f "$tmp/unifont.pf2"; warn "unicode.pf2 fehlt (sys-boot/grub USE=fonts) – Theme evtl. ohne Text"; fi
+        ok "Klötzchen-Look: Erde, Stein-Knöpfe, Titel"
+    fi
+
+    $SUDO rm -rf "$THEME_DIR"
+    $SUDO mkdir -p "$THEME_DIR"
+    $SUDO cp -a "$tmp"/. "$THEME_DIR"/
+    $SUDO chmod -R a+rX "$THEME_DIR"
+    rm -rf "$tmp"
+    THEME_FONT=${font:+$THEME_DIR/$font}
+    ok "Theme installiert: $THEME_DIR"
+}
+
+theme_blue() { # theme_blue <ordner> – Bilder + Schriften für das blaue Theme erzeugen
+    local tmp=$1 bg="" f fr fb sz bold=()
+    command -v magick >/dev/null || { warn "ImageMagick (magick) fehlt – Theme übersprungen"; return 1; }
 
     # Hintergrund: Wallpaper weichgezeichnet + blauer Verlauf (sonst nur Verlauf)
     for f in /var/lib/gentoo-rice/sddm/background.jpg "$HOME/.cache/rice/current.png"; do
@@ -119,13 +154,6 @@ install_theme() {
     fi
     if [[ -f $tmp/rice-16.pf2 ]]; then ok "Schrift: $(basename "$fr")"
     else warn "Keine eigene Schrift (grub-mkfont) – GRUB nimmt seine Standardschrift"; fi
-
-    $SUDO rm -rf "$THEME_DIR"
-    $SUDO mkdir -p "$THEME_DIR"
-    $SUDO cp -a "$tmp"/. "$THEME_DIR"/
-    $SUDO chmod -R a+rX "$THEME_DIR"
-    rm -rf "$tmp"
-    ok "Theme installiert: $THEME_DIR"
 }
 
 [[ -f $CFG ]] || die "$CFG fehlt – GRUB (sys-boot/grub) ist nicht installiert oder nicht der Bootloader."
@@ -159,7 +187,7 @@ if command -v os-prober >/dev/null; then ok "os-prober vorhanden"; else warn "os
 
 # ── 3. Theme ──────────────────────────────────────────────
 if ((THEME)); then
-    step "Blaues GRUB-Theme"
+    step "GRUB-Theme ($THEME_NAME)"
     install_theme || THEME_DIR=""
 fi
 
@@ -186,7 +214,7 @@ if [[ -n $THEME_DIR ]]; then
     set_kv GRUB_GFXPAYLOAD_LINUX keep
     set_kv GRUB_THEME "$THEME_DIR/theme.txt"
     KEYS+=(GRUB_TERMINAL_OUTPUT GRUB_GFXMODE GRUB_GFXPAYLOAD_LINUX GRUB_THEME)
-    if $SUDO test -f "$THEME_DIR/rice-16.pf2"; then set_kv GRUB_FONT "$THEME_DIR/rice-16.pf2"; KEYS+=(GRUB_FONT); fi
+    if [[ -n $THEME_FONT ]]; then set_kv GRUB_FONT "$THEME_FONT"; KEYS+=(GRUB_FONT); fi
 fi
 # Nur eine Zeile pro Schlüssel behalten (falls doppelt vorhanden)
 for k in "${KEYS[@]}"; do

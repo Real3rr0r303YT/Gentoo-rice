@@ -48,7 +48,7 @@ DONE=()
 
 # ── Paketlisten ────────────────────────────────────────────
 # "a|b" = Alternativen (erstes verfügbares Paket wird genommen)
-PKGS_BASE=( dev-vcs/git app-eselect/eselect-repository )
+PKGS_BASE=( dev-vcs/git app-eselect/eselect-repository app-portage/eix )
 PKGS_DESKTOP=(
     gui-wm/hyprland gui-apps/hyprlock gui-apps/hypridle
     gui-libs/xdg-desktop-portal-hyprland sys-apps/xdg-desktop-portal sys-apps/xdg-desktop-portal-gtk
@@ -216,6 +216,8 @@ fi
 # ── 1. Grundwerkzeuge ──────────────────────────────────────
 step "Grundwerkzeuge (git, eselect-repository)"
 emerge_pkgs "${PKGS_BASE[@]}"
+# Paket-Suche für den App-Store (Super+Shift+A)
+if command -v eix-update >/dev/null && [[ $DRY_RUN -eq 0 ]]; then $SUDO eix-update >>"$LOG" 2>&1 || true; fi
 { command -v eselect >/dev/null && command -v git >/dev/null; } || die "git/eselect-repository konnten nicht installiert werden."
 ok "git + eselect-repository vorhanden"
 DONE+=("Grundwerkzeuge")

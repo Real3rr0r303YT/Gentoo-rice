@@ -6,7 +6,7 @@ set -Eeuo pipefail
 
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-DEV=0 WE=0 DRY_RUN=0 CLAUDE=1 LOGIN=0 LOGIN_THEME=gentoo-rice GRUB=0 APPS=1
+DEV=0 WE=0 DRY_RUN=0 CLAUDE=1 LOGIN=0 LOGIN_THEME=gentoo-rice GRUB=0 APPS=1 AV=1
 # GRUB (blaues Theme, 5 s Menü) standardmäßig, wenn GRUB der Bootloader ist
 if [[ -f /etc/default/grub ]]; then GRUB=1; fi
 for arg in "$@"; do
@@ -20,13 +20,15 @@ for arg in "$@"; do
         --grub)    GRUB=1 ;;
         --no-grub) GRUB=0 ;;
         --no-apps) APPS=0 ;;
+        --no-av)   AV=0 ;;
         -h|--help)
-            printf 'Nutzung: ./install.sh [--dev] [--we] [--login[=minecraft]] [--no-grub] [--no-apps] [--no-claude] [--dry-run]\n'
+            printf 'Nutzung: ./install.sh [--dev] [--we] [--login[=minecraft]] [--no-grub] [--no-apps] [--no-av] [--no-claude] [--dry-run]\n'
             printf '  --dev      zusätzlich Entwickler-Setup (scripts/dev-setup.sh)\n'
             printf '  --we       zusätzlich Wallpaper Engine (scripts/wallpaperengine.sh)\n'
             printf '  --login    grafischer Login-Screen (SDDM, Wayland); --login=minecraft für den Klötzchen-Look\n'
             printf '  --no-grub  GRUB nicht anfassen (Standard: Klötzchen-Theme, Menü 5 s, Windows-Eintrag)\n'
             printf '  --no-apps  ohne Spotify + Spicetify, Gaming-Apps (Minecraft, CurseForge, Sober), Proton/OpSec-Apps, OBS\n'
+            printf '  --no-av    ohne Virenschutz (ClamAV + Echtzeit-Wächter für Downloads/Minecraft-Mods)\n'
             printf '  --no-claude  Claude Code nicht installieren\n'
             printf '  --dry-run  nur anzeigen, was installiert/geändert würde (keine Änderungen)\n'
             exit 0 ;;
@@ -34,7 +36,7 @@ for arg in "$@"; do
     esac
 done
 
-TOTAL=$((14 + CLAUDE + APPS + LOGIN + GRUB + DEV + WE))
+TOTAL=$((14 + CLAUDE + APPS + AV + LOGIN + GRUB + DEV + WE))
 KW_FILE=/etc/portage/package.accept_keywords/gentoo-rice-auto
 # shellcheck source=scripts/links.sh
 source "$REPO/scripts/links.sh"
@@ -559,6 +561,14 @@ if [[ $APPS -eq 1 ]]; then
     if [[ $DRY_RUN -eq 1 ]]; then info "würde ausführen: ./scripts/apps.sh"
     elif "$REPO/scripts/apps.sh"; then DONE+=("Spotify + Spicetify, Minecraft, CurseForge, Sober, Mullvad VPN, Proton Pass/Mail/Calendar, Tor Browser, Signal, OBS")
     else warn "Apps unvollständig"; FAILED+=("Apps (einzeln: ./scripts/apps.sh)"); fi
+fi
+
+# ── Virenschutz: ClamAV + Echtzeit-Wächter ─────────────────
+if [[ $AV -eq 1 ]]; then
+    step "Virenschutz (ClamAV)"
+    if [[ $DRY_RUN -eq 1 ]]; then info "würde ausführen: ./scripts/antivirus.sh setup"
+    elif "$REPO/scripts/antivirus.sh" setup; then DONE+=("Virenschutz: ClamAV, Echtzeit-Wächter (Downloads, Minecraft, CurseForge), Quarantäne")
+    else warn "Virenschutz unvollständig"; FAILED+=("Virenschutz (einzeln: ./scripts/antivirus.sh setup)"); fi
 fi
 
 # ── Claude Code ────────────────────────────────────────────

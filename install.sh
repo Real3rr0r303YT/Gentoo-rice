@@ -557,7 +557,7 @@ DONE+=("gamemode, mangohud, Flatpak + Flathub, Steam, Proton-GE, ProtonUp-Qt, Bo
 if [[ $APPS -eq 1 ]]; then
     step "Apps: Spotify, Gaming, OpSec (Proton), OBS Studio"
     if [[ $DRY_RUN -eq 1 ]]; then info "würde ausführen: ./scripts/apps.sh"
-    elif "$REPO/scripts/apps.sh"; then DONE+=("Spotify + Spicetify, Minecraft, CurseForge, Sober, Proton VPN/Pass, Tor Browser, Signal, OBS")
+    elif "$REPO/scripts/apps.sh"; then DONE+=("Spotify + Spicetify, Minecraft, CurseForge, Sober, Mullvad VPN, Proton Pass/Mail/Calendar, Tor Browser, Signal, OBS")
     else warn "Apps unvollständig"; FAILED+=("Apps (einzeln: ./scripts/apps.sh)"); fi
 fi
 

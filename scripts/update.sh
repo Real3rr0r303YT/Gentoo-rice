@@ -6,14 +6,17 @@
 #                                         installiert Hyprland (+ hyprlock, hypridle, Portal), falls es fehlt
 #          ./scripts/update.sh --system   zusätzlich: Hyprland auf die neueste Version, Portage-Sync,
 #                                         emerge @world + Flatpaks
+#          --no-relogin                   danach NICHT zum Login-Screen zurückkehren
+#          (Standard: am Ende startet der Login-Screen neu → neu anmelden, alles frisch geladen)
 set -Eeuo pipefail
 
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-SYSTEM=0
+SYSTEM=0 RELOGIN=1
 for arg in "$@"; do
     case $arg in
         --system) SYSTEM=1 ;;
-        -h|--help) sed -n '2,8p' "$0"; exit 0 ;;
+        --no-relogin) RELOGIN=0 ;;
+        -h|--help) sed -n '2,10p' "$0"; exit 0 ;;
         *) printf 'Unbekannte Option: %s\n' "$arg" >&2; exit 1 ;;
     esac
 done
@@ -171,3 +174,13 @@ fi
 
 print_problems
 printf '\n%sUpdate fertig.%s Log: %s\n' "$G$B" "$N" "$LOG"
+
+# ── Zurück zum Login-Screen (SDDM), damit alles frisch geladen wird ──
+if ((RELOGIN)) && pgrep -x sddm >/dev/null; then
+    printf '\n%sLogin-Screen startet in 5 s neu%s – offene Programme werden geschlossen. Abbrechen: Strg+C\n' "$Y$B" "$N"
+    for i in 5 4 3 2 1; do printf '  %s …\r' "$i"; sleep 1; done
+    printf '\n'
+    $SUDO rc-service display-manager restart
+elif ((RELOGIN)); then
+    info "Kein Login-Screen aktiv (SDDM) – einfach ab- und wieder anmelden"
+fi

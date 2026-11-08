@@ -70,6 +70,7 @@ Mitgeliefert werden nur drei selbst generierte Verlaufs-Platzhalter – keine fr
 
 ```sh
 ./scripts/update.sh            # Rice: git pull, Links prüfen, Farben, Hyprland/Waybar neu laden
+./scripts/update.sh --no-relogin   # ohne Rückkehr zum Login-Screen (Standard: danach startet der Login-Screen neu)
                                # installiert Hyprland, hyprlock, hypridle + Portal, falls etwas fehlt
 ./scripts/update.sh --system   # zusätzlich Hyprland auf neueste Version, Gentoo (@world) + Flatpaks
 ```

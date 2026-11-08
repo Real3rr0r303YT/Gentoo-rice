@@ -70,6 +70,7 @@ Only three self-generated gradient placeholders ship with the repo – no third-
 
 ```sh
 ./scripts/update.sh            # rice: git pull, check links, colors, reload Hyprland/Waybar
+./scripts/update.sh --no-relogin   # without returning to the login screen (default: login screen restarts afterwards)
                                # installs Hyprland, hyprlock, hypridle + portal if anything is missing
 ./scripts/update.sh --system   # also Hyprland to the latest version, Gentoo (@world) + Flatpaks
 ```

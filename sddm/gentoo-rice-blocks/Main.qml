@@ -170,7 +170,15 @@ Rectangle {
     }
 
     // ── Anmelde-Panel ─────────────────────────────────────────
-    property string userName: (typeof userModel !== "undefined" && userModel && userModel.lastUser) ? userModel.lastUser : ""
+    // Beim allerersten Start ist lastUser leer → ersten Benutzer aus der Liste nehmen
+    property string userName: (typeof userModel !== "undefined" && userModel && userModel.lastUser) ? userModel.lastUser : users.currentText
+    ComboBox {
+        id: users
+        visible: false
+        model: typeof userModel !== "undefined" && userModel ? userModel : []
+        textRole: "name"
+        currentIndex: typeof userModel !== "undefined" && userModel && userModel.lastIndex >= 0 ? userModel.lastIndex : 0
+    }
     property string message: ""
 
     function doLogin() {

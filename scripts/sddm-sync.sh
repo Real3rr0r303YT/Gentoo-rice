@@ -24,7 +24,8 @@ tmp=$(mktemp --suffix=.png)
 if [[ -n $src ]] && magick "${src}[0]" -resize 256x256^ -gravity center -extent 256x256 "$tmp" 2>/dev/null; then
     :
 else
-    # Platzhalter: Verlauf in den Akzentfarben + Initiale
+    # Platzhalter: blauer Verlauf + Initiale
+    accent="#3b82f6"; accent2="#22d3ee"
     initial=$(id -un | cut -c1 | tr '[:lower:]' '[:upper:]')
     magick -size 256x256 gradient:"$accent"-"$accent2" -gravity center \
         -fill white -pointsize 128 -annotate +0+6 "$initial" "$tmp"

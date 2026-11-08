@@ -5,6 +5,8 @@ Nutzung:
     pip install PySide6-Essentials
     QT_QPA_PLATFORM=offscreen python3 tools/sddm-preview.py sddm/gentoo-rice vorschau.png [theme.conf.user]
 
+    SDDM_PREVIEW_FIRSTBOOT=1 simuliert den ersten Start (kein "letzter Benutzer").
+
 Beendet sich mit Code 1, wenn QML-Fehler oder JavaScript-Laufzeitfehler auftreten (für CI).
 """
 import configparser
@@ -12,7 +14,7 @@ import warnings
 import os
 import sys
 
-from PySide6.QtCore import (QAbstractListModel, QByteArray, QModelIndex, QObject, Property, Qt, QTimer,
+from PySide6.QtCore import (QAbstractListModel, QByteArray, QMetaObject, QModelIndex, QObject, Property, Qt, QTimer,
                             QUrl, Signal, Slot, qInstallMessageHandler)
 from PySide6.QtGui import QGuiApplication
 from PySide6.QtQml import QQmlPropertyMap
@@ -60,7 +62,7 @@ class ListModel(QAbstractListModel):
 
     @Property(str, constant=True)
     def lastUser(self):
-        return self._n[self._last]
+        return self._n[self._last] if self._last >= 0 else ""
 
 
 class Sddm(QObject):
@@ -75,9 +77,12 @@ class Sddm(QObject):
     def canPowerOff(self):
         return True
 
+    logins = []
+
     @Slot(str, str, int)
     def login(self, user, password, session):
-        print(f"login({user}, ***, {session})")
+        print(f"login({user!r}, ***, {session})")
+        self.logins.append(user)
 
     @Slot()
     def reboot(self):
@@ -103,7 +108,7 @@ for k, v in cp["General"].items():
 
 MOCKS = {
     "config": config,
-    "userModel": ListModel(["benutzer"], 0),
+    "userModel": ListModel(["benutzer"], -1 if os.environ.get("SDDM_PREVIEW_FIRSTBOOT") else 0),
     "sessionModel": ListModel(["Hyprland", "Hyprland (Gentoo-rice)"], 0),
     "sddm": Sddm(),
     "keyboard": Keyboard(),
@@ -121,6 +126,12 @@ view.show()
 
 def finish():
     view.grabWindow().save(out)
+    # Anmelden simulieren: SDDM muss einen Benutzernamen bekommen
+    root = view.rootObject()
+    if root is not None and root.metaObject().indexOfMethod("doLogin()") >= 0:
+        QMetaObject.invokeMethod(root, "doLogin")
+        if not MOCKS["sddm"].logins or not MOCKS["sddm"].logins[-1]:
+            problems.append("sddm.login() ohne Benutzernamen aufgerufen")
     print("Vorschau:", out)
     app.exit(1 if problems else 0)
 

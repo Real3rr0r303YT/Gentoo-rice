@@ -58,6 +58,7 @@ choice=$(printf '%s\n' \
     "󰍂  Login-Screen angleichen" \
     "󰚰  Apps aktualisieren" \
     "󰚰  Rice aktualisieren" \
+    "󰣧  Gentoo aktualisieren (emerge @world)" \
     "󰌌  Tastenkürzel" \
     "󰐥  Power-Menü" |
     rofi -dmenu -i -p "Rice" -theme "$THEME" -theme-str 'window { width: 400px; } listview { lines: 18; }')
@@ -88,6 +89,9 @@ case "$choice" in
         else notify "Login-Screen" "nicht eingerichtet – ./install.sh --login"; fi ;;
     *"Apps aktualisieren") exec kitty --class rice-float --hold "$DIR/apps.sh" update ;;
     *"Rice aktualisieren") exec kitty --class rice-float --hold "$DIR/update.sh" ;;
+    *"Gentoo aktualisieren"*)
+        # shellcheck disable=SC2016  # $1 wird in der Unter-Shell ausgewertet
+        exec kitty --hold sh -c 'echo "Gentoo komplett aktualisieren: Portage-Sync, Hyprland, emerge @world, Flatpaks (sudo-Passwort nötig)"; echo; "$1/update.sh" --system; echo; echo "Fertig – nach Kernel-/Hyprland-Updates neu starten: loginctl reboot"' sh "$DIR" ;;
     *"Tastenkürzel")      keys ;;
     *"Power-Menü")        exec "$DIR/powermenu.sh" ;;
 esac

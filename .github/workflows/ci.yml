@@ -80,6 +80,7 @@ jobs:
           for d in sddm/*/; do
             t=$(basename "$d")
             python3 tools/sddm-preview.py "$d" "previews/$t.png"
+            SDDM_PREVIEW_FIRSTBOOT=1 python3 tools/sddm-preview.py "$d" "previews/$t-erster-start.png"
           done
 
       - name: Vorschaubilder hochladen

@@ -43,6 +43,8 @@ choice=$(printf '%s\n' \
     "󰓇  Spotify" \
     "󰍳  Minecraft" \
     "󰺵  Roblox (Sober)" \
+    "󰺵  Roblox Studio (Vinegar)" \
+    "󰄜  Handy verbinden (KDE Connect)" \
     "󰪺  CurseForge" \
     "󰖂  Mullvad VPN" \
     "󰒃  Tor Browser" \
@@ -66,13 +68,15 @@ case "$choice" in
     *"  Spotify")         exec flatpak run com.spotify.Client ;;
     *"  Minecraft")       exec flatpak run com.mojang.Minecraft ;;
     *"Roblox (Sober)")    exec flatpak run org.vinegarhq.Sober ;;
+    *"Roblox Studio (Vinegar)") exec flatpak run org.vinegarhq.Vinegar ;;
+    *"Handy verbinden"*)  exec "$DIR/phone.sh" open ;;
     *"  OBS Studio")      exec flatpak run com.obsproject.Studio ;;
     *"Gaming-Modus an/aus") exec "$DIR/gaming-mode.sh" toggle ;;
     *"Virenschutz installieren/aktualisieren") exec kitty --class rice-float --hold "$DIR/antivirus.sh" update ;;
     *"Virenscan (Home)")  exec kitty --class rice-float --hold "$DIR/antivirus.sh" scan "$HOME" ;;
     *"Quarantäne öffnen") mkdir -p "$HOME/.local/share/gentoo-rice/quarantine"; exec thunar "$HOME/.local/share/gentoo-rice/quarantine" ;;
     *"  CurseForge")      exec flatpak run com.overwolf.curseforge ;;
-    *"  Mullvad VPN")     exec mullvad-vpn ;;
+    *"  Mullvad VPN")     exec "$DIR/mullvad.sh" open ;;
     *"  Tor Browser")
         if flatpak info --user org.torproject.torbrowser-launcher >/dev/null 2>&1; then exec flatpak run org.torproject.torbrowser-launcher
         else exec flatpak run com.github.micahflee.torbrowser-launcher; fi ;;

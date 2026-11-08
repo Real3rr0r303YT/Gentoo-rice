@@ -17,6 +17,7 @@ WATCH_DIRS=(
     "$HOME/.var/app/com.mojang.Minecraft"
     "$HOME/.var/app/com.overwolf.curseforge"
     "$HOME/.var/app/org.vinegarhq.Sober"
+    "$HOME/.var/app/org.vinegarhq.Vinegar"
     "$HOME/.local/share/PrismLauncher"
     "$HOME/curseforge"
 )

@@ -86,6 +86,8 @@ Mitgeliefert werden nur drei selbst generierte Verlaufs-Platzhalter – keine fr
 
 Setzt `GRUB_TIMEOUT`, `GRUB_TIMEOUT_STYLE=menu` und `GRUB_DISABLE_OS_PROBER=false`, erzeugt das Menü auf Englisch mit kurzen Namen (`Gentoo` – bleibt nach Kernel-Updates über `/etc/kernel/postinst.d/99-gentoo-rice-grub`), sichert vorher `/etc/default/grub` und schreibt `/boot/grub/grub.cfg` neu. Standard ist der Klötzchen-Look (Erde, Stein-Knöpfe, Pixel-Titel, Unifont – eigene Texturen, keine Original-Assets) in `/boot/grub/themes/gentoo-rice-blocks`; `--theme blue` nimmt das blaue Theme (unscharfes Wallpaper, JetBrains Mono über `grub-mkfont`). `./install.sh` macht das automatisch, wenn GRUB installiert ist.
 
+**Handy-Ecosystem (KDE Connect):** startet mit Hyprland. Auf dem Handy die App *KDE Connect* installieren, gleiches WLAN, im Rice-Menü *Handy verbinden* → koppeln. Dann: Dateien senden, gemeinsame Zwischenablage, Handy-Benachrichtigungen am PC, Medien steuern.
+
 ### Virenschutz (ClamAV)
 
 ```bash
@@ -102,7 +104,8 @@ Setzt `GRUB_TIMEOUT`, `GRUB_TIMEOUT_STYLE=menu` und `GRUB_DISABLE_OS_PROBER=fals
 ### Apps: Spotify + Spicetify, Gaming, OpSec (Proton), OBS Studio
 
 ```bash
-./scripts/apps.sh             # Spotify + Spicetify, Minecraft Java, CurseForge, Sober (Roblox), Mullvad VPN (GURU), Proton Pass/Mail/Calendar/Authenticator, Tor Browser, Signal, OBS Studio – alles Flatpak
+./scripts/apps.sh             # Spotify + Spicetify, Minecraft Java, CurseForge, Sober (Roblox), Roblox Studio (Vinegar), KDE Connect, Mullvad VPN (GURU), Proton Pass/Mail/Calendar/Authenticator, Tor Browser, Signal, OBS Studio – alles Flatpak
+./scripts/mullvad.sh status    # Mullvad prüfen; ./scripts/mullvad.sh setup richtet den OpenRC-Dienst ein
 ./scripts/apps.sh update      # alle Apps aktualisieren (auch im Rice-Menü: „Apps aktualisieren“)
 ./scripts/apps.sh spicetify   # Spicetify nach einem Spotify-Update neu anwenden (macht update.sh --system automatisch)
 ```

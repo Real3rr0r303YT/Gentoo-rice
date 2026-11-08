@@ -72,7 +72,7 @@
         "signal": 8,
         "on-scroll-up": "~/.local/share/gentoo-rice/scripts/brightness.sh up",
         "on-scroll-down": "~/.local/share/gentoo-rice/scripts/brightness.sh down",
-        "on-click": "~/.local/share/gentoo-rice/scripts/brightness.sh set 100",
+        "on-click": "~/.local/share/gentoo-rice/scripts/brightness.sh click",
         "on-click-right": "~/.local/share/gentoo-rice/scripts/brightness.sh set 30"
     },
     "pulseaudio": {

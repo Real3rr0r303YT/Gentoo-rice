@@ -59,6 +59,7 @@ tooltip label { color: @fg; padding: 2px 4px; }
 #memory { color: @c3; }
 #pulseaudio { color: @accent; }
 #custom-brightness { color: @c3; }
+#custom-brightness.off { color: alpha(@fg, 0.4); }
 #network { color: @accent2; }
 #pulseaudio.muted, #network.disconnected { color: alpha(@fg, 0.4); }
 #battery.warning:not(.charging) { color: @c3; }

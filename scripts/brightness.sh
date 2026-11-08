@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Gentoo-rice – Bildschirmhelligkeit (Waybar-Modul, Helligkeitstasten)
 #   Laptop-Display: brightnessctl · externer Monitor: DDC/CI über ddcutil
-# Nutzung: brightness.sh status|up|down|set <0-100>|setup
+# Nutzung: brightness.sh status|up|down|set <0-100>|click|setup
 # Copyright (C) 2026 3rr0r303YT – GPL-3.0-or-later
 set -uo pipefail
 CACHE="$HOME/.cache/rice/brightness"
@@ -51,7 +51,7 @@ status() {
     if v=$(get) && [[ $v =~ ^[0-9]+$ ]]; then
         printf '{"text":"%s%%","percentage":%s,"tooltip":"Helligkeit: %s%% – Mausrad zum Ändern"}\n' "$v" "$v" "$v"
     else
-        printf '{"text":"","tooltip":"Helligkeit: nicht verfügbar (./scripts/brightness.sh setup)"}\n'
+        printf '{"text":"--","percentage":0,"class":"off","tooltip":"Helligkeit: noch nicht eingerichtet – klicken zum Einrichten"}\n'
     fi
 }
 
@@ -71,7 +71,9 @@ setup() { # externer Monitor: ddcutil + i2c-dev (sudo)
         warn "Kein DDC/CI-Monitor erkannt – im Monitor-Menü 'DDC/CI' einschalten; nach Neuanmeldung erneut testen"
     fi
     rm -f "$CACHE"
+    pkill -RTMIN+8 -x waybar 2>/dev/null || true
     print_problems
+    echo "Falls die Helligkeit noch '--' zeigt: einmal ab- und wieder anmelden."
 }
 
 case ${1:-status} in
@@ -79,6 +81,9 @@ case ${1:-status} in
     up)     cur=$(get) || exit 0; apply $((cur + STEP)) ;;
     down)   cur=$(get) || exit 0; apply $((cur - STEP)) ;;
     set)    [[ ${2:-} =~ ^[0-9]+$ ]] && apply "$2" ;;
+    click)  # Waybar-Klick: 100 % – oder Einrichtung, falls noch nichts steuerbar ist
+        if get >/dev/null 2>&1; then apply 100
+        else exec kitty --class rice-float --hold "$(readlink -f "${BASH_SOURCE[0]}")" setup; fi ;;
     setup)  setup ;;
     *) echo "Nutzung: $0 status|up|down|set <0-100>|setup" >&2; exit 1 ;;
 esac

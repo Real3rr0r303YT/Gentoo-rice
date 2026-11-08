@@ -250,6 +250,7 @@ Am Ende erscheint eine Übersicht der installierten Versionen.
 | `Super + Leertaste` | Launcher (rofi) |
 | `Super + W` | Wallpaper-Picker (Bilder, Videos, Wallpaper Engine) |
 | `Super + Shift + W` | Zufälliges Wallpaper |
+| `Super + D` | Rice-Menü (Theme, Wallpaper, Login-Screen, Update, Tastenkürzel) |
 | `Super + Shift + T` | Theme-Wechsler |
 | `Super + B` | Firefox |
 | `Super + G` | Steam |
@@ -262,7 +263,8 @@ Am Ende erscheint eine Übersicht der installierten Versionen.
 | `Super + Y` | Songtext-Overlay (an/aus) |
 | `Super + K` | Claude Code (Terminal) |
 | `Super + Q` | Fenster schließen |
-| `Super + F` | Vollbild |
+| `Super + F` | Firefox |
+| `Super + Shift + F` | Vollbild |
 | `Super + V` | Schwebend umschalten |
 | `Super + P` | Pseudo-Tiling |
 | `Super + J` | Split umschalten |

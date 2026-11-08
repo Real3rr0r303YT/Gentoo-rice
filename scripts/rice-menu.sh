@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Gentoo-rice – Rice-Menü (Super+D / Paletten-Icon in der Waybar):
-# Gaming-Modus, Apps, Spotify, Minecraft, Roblox, CurseForge, Proton VPN, Tor, OBS, Theme, Wallpaper, Login-Screen, Update, Tastenkürzel, Power
+# Gaming-Modus, Apps, Spotify, Minecraft, Roblox, CurseForge, Mullvad VPN, Tor, OBS, Theme, Wallpaper, Login-Screen, Update, Tastenkürzel, Power
 set -uo pipefail
 export PATH="$HOME/.local/bin:$PATH"
 DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
@@ -42,7 +42,7 @@ choice=$(printf '%s\n' \
     "󰍳  Minecraft" \
     "󰺵  Roblox (Sober)" \
     "󰪺  CurseForge" \
-    "󰖂  Proton VPN" \
+    "󰖂  Mullvad VPN" \
     "󰒃  Tor Browser" \
     "󰕧  OBS Studio" \
     "󰏘  Theme ändern" \
@@ -62,7 +62,7 @@ case "$choice" in
     *"  OBS Studio")      exec flatpak run com.obsproject.Studio ;;
     *"Gaming-Modus an/aus") exec "$DIR/gaming-mode.sh" toggle ;;
     *"  CurseForge")      exec flatpak run com.overwolf.curseforge ;;
-    *"  Proton VPN")      exec flatpak run com.protonvpn.www ;;
+    *"  Mullvad VPN")     exec mullvad-vpn ;;
     *"  Tor Browser")
         if flatpak info --user org.torproject.torbrowser-launcher >/dev/null 2>&1; then exec flatpak run org.torproject.torbrowser-launcher
         else exec flatpak run com.github.micahflee.torbrowser-launcher; fi ;;

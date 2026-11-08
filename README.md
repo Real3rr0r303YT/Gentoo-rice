@@ -88,7 +88,7 @@ Sets `GRUB_TIMEOUT`, `GRUB_TIMEOUT_STYLE=menu` and `GRUB_DISABLE_OS_PROBER=false
 ### Apps: Spotify + Spicetify, gaming, OpSec (Proton), OBS Studio
 
 ```bash
-./scripts/apps.sh             # Spotify + Spicetify, Minecraft Java, CurseForge, Sober (Roblox), Proton VPN/Pass/Mail/Authenticator, Tor Browser, Signal, OBS Studio – all Flatpak
+./scripts/apps.sh             # Spotify + Spicetify, Minecraft Java, CurseForge, Sober (Roblox), Mullvad VPN (GURU), Proton Pass/Mail/Calendar/Authenticator, Tor Browser, Signal, OBS Studio – all Flatpak
 ./scripts/apps.sh spicetify   # re-apply Spicetify after a Spotify update (update.sh --system does this)
 ```
 

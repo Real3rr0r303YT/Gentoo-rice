@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Gentoo-rice – Extra-Apps (Flatpak, ohne sudo):
+# Gentoo-rice – Extra-Apps (Flatpak; Mullvad VPN über GURU mit sudo):
 #   Spotify + Spicetify (Theme in den Rice-Farben), Gaming (Minecraft Java, CurseForge, Sober),
-#   OpSec (Proton VPN/Pass/Mail/Authenticator, Tor Browser, Signal), OBS Studio
+#   OpSec (Mullvad VPN, Proton Pass/Mail/Calendar/Authenticator, Tor Browser, Signal), OBS Studio
 # Copyright (C) 2026 3rr0r303YT – GPL-3.0-or-later
 #
 # Nutzung: ./scripts/apps.sh               alles installieren/aktualisieren
@@ -21,13 +21,15 @@ GAMING_APPS=(
     "org.vinegarhq.Sober|Sober (Roblox)|Beim ersten Start mit dem Roblox-Konto anmelden|0"
 )
 OPSEC_APPS=(
-    "com.protonvpn.www|Proton VPN|Anmelden → Schnellverbindung, Kill Switch in den Einstellungen|0"
     "me.proton.Pass|Proton Pass|Passwort-Manager|1"
-    "me.proton.Mail|Proton Mail|Desktop-App|1"
+    "me.proton.Mail|Proton Mail|Desktop-App (mit Kalender)|1"
     "me.proton.Authenticator|Proton Authenticator|2FA-Codes|1"
     "org.torproject.torbrowser-launcher,com.github.micahflee.torbrowser-launcher|Tor Browser|Erster Start lädt den Tor Browser herunter|0"
     "org.signal.Signal|Signal|Messenger mit Ende-zu-Ende-Verschlüsselung|0"
 )
+# ersetzt/abgewählt → werden entfernt, falls noch installiert
+REMOVED_APPS=( com.protonvpn.www org.prismlauncher.PrismLauncher )
+MULLVAD_PKG=net-vpn/mullvadvpn-app   # GURU (Binärpaket der offiziellen App)
 MEDIA_APPS=(
     "com.obsproject.Studio|OBS Studio|Bildschirm aufnehmen: Quelle 'Bildschirmaufnahme (PipeWire)'|0"
 )
@@ -45,9 +47,9 @@ if [[ $MODE == sync ]]; then
     exit 0
 fi
 
-TOTAL=1 STEP_LABEL=apps
-if [[ $MODE == all ]]; then TOTAL=5; fi
-export GENTOO_RICE_SUDO_LOOP=1   # kein sudo nötig
+TOTAL=1 STEP_LABEL=apps KW_FILE=/etc/portage/package.accept_keywords/gentoo-rice-apps
+if [[ $MODE == all ]]; then TOTAL=6
+else export GENTOO_RICE_SUDO_LOOP=1; fi   # sudo nur für Mullvad (emerge)
 # shellcheck source=scripts/lib.sh
 source "$REPO/scripts/lib.sh"
 
@@ -62,6 +64,44 @@ flatpak_app() { # flatpak_app <id[,alternative…]> <name> [optional]
     done
     if [[ ${3:-0} == 1 ]]; then info "$2 nicht auf Flathub verfügbar – übersprungen"; return 1; fi
     warn "$2 konnte nicht installiert werden (Details im Log)"; FAILED+=("${ids[0]} (Flatpak)"); return 1
+}
+
+# Web-App als Starter (für Dienste ohne Linux-Flatpak), erscheint in rofi
+web_app() { # web_app <id> <name> <url> <icon>
+    local f="$HOME/.local/share/applications/$1.desktop"
+    mkdir -p "$(dirname "$f")"
+    cat > "$f" <<DESK
+[Desktop Entry]
+Type=Application
+Name=$2
+Comment=$2 (Web-App, Gentoo-rice)
+Exec=xdg-open $3
+Icon=$4
+Categories=Office;Network;
+DESK
+    ok "$2 als Web-App im Launcher ($3)"
+}
+
+mullvad() {
+    ensure_repo guru >/dev/null 2>&1 || true
+    as_dir package.accept_keywords
+    emerge_pkgs "$MULLVAD_PKG"
+    if ! installed "$MULLVAD_PKG"; then
+        warn "Mullvad VPN nicht installiert – Alternative: https://mullvad.net/download/vpn/linux"
+        return 0
+    fi
+    local s svc=""
+    for s in mullvad-daemon mullvadvpn-daemon mullvad; do
+        if [[ -x /etc/init.d/$s ]]; then svc=$s; break; fi
+    done
+    if [[ -n $svc ]]; then
+        $SUDO rc-update add "$svc" default >>"$LOG" 2>&1 || true
+        $SUDO rc-service "$svc" start >>"$LOG" 2>&1 || true
+        ok "Mullvad-Dienst ($svc) läuft und startet beim Booten"
+    else
+        warn "Kein OpenRC-Dienst für Mullvad gefunden – Daemon: sudo mullvad-daemon &"
+    fi
+    info "Start: Rofi → Mullvad VPN → Kontonummer eingeben → Verbinden"
 }
 
 app_list() { # app_list <eintrag…>
@@ -127,8 +167,19 @@ if [[ $MODE == all ]]; then
     flatpak_app "$SPOTIFY_ID" "Spotify" || true
     step "Gaming: Minecraft Java, CurseForge, Sober (Roblox)"
     app_list "${GAMING_APPS[@]}"
-    step "OpSec: Proton VPN, Proton Pass, Proton Mail, Tor Browser, Signal"
+    step "OpSec: Proton Pass, Proton Mail, Proton Calendar, Tor Browser, Signal"
+    for id in "${REMOVED_APPS[@]}"; do
+        if flatpak info --user "$id" >/dev/null 2>&1 && flatpak uninstall --user -y --noninteractive "$id" >>"$LOG" 2>&1; then
+            ok "entfernt: $id"
+        fi
+    done
     app_list "${OPSEC_APPS[@]}"
+    web_app proton-calendar "Proton Calendar" https://calendar.proton.me x-office-calendar
+    if ! flatpak info --user me.proton.Mail >/dev/null 2>&1; then
+        web_app proton-mail "Proton Mail" https://mail.proton.me mail-client
+    fi
+    step "Mullvad VPN (GURU)"
+    mullvad
     step "OBS Studio"
     app_list "${MEDIA_APPS[@]}"
 fi

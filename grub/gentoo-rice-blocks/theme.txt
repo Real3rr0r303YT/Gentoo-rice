@@ -1,4 +1,4 @@
-# Gentoo-rice – GRUB-Theme im Klötzchen-Look (eigene Pixeltexturen)
+# Gentoo-rice – GRUB theme, block look (own pixel textures)
 # Bilder: tools/grub-blocks-assets.py · Schrift: Unifont (GRUB-Standard, Pixel-Look)
 title-text: ""
 desktop-image: "background.png"
@@ -11,17 +11,17 @@ terminal-height: "80%"
 terminal-box: "item_*.png"
 
 + image {
-    left = 50%-315
+    left = 50%-200
     top = 11%
-    width = 630
-    height = 84
+    width = 400
+    height = 96
     file = "title.png"
 }
 + image {
-    left = 50%+220
-    top = 11%+48
-    width = 304
-    height = 124
+    left = 50%+150
+    top = 11%+56
+    width = 288
+    height = 120
     file = "splash.png"
 }
 
@@ -52,7 +52,7 @@ terminal-box: "item_*.png"
     width = 100%
     height = 20
     align = "center"
-    text = "Start in %d Sekunden ..."
+    text = "Booting in %d seconds ..."
     font = "Unifont Regular 16"
     color = "#a0a0a0"
 }
@@ -62,7 +62,7 @@ terminal-box: "item_*.png"
     width = 50%
     height = 20
     align = "left"
-    text = "Gentoo-rice"
+    text = "Gentoo Linux"
     font = "Unifont Regular 16"
     color = "#ffffff"
 }
@@ -72,7 +72,7 @@ terminal-box: "item_*.png"
     width = 50%-12
     height = 20
     align = "right"
-    text = "Pfeile: wählen  Enter: starten  e: bearbeiten  c: Konsole"
+    text = "Arrows: select  Enter: boot  e: edit  c: console"
     font = "Unifont Regular 16"
     color = "#ffffff"
 }

@@ -83,12 +83,12 @@ Mitgeliefert werden nur drei selbst generierte Verlaufs-Platzhalter – keine fr
 ./scripts/grub-setup.sh --restore     # Original von /etc/default/grub zurück
 ```
 
-Setzt `GRUB_TIMEOUT`, `GRUB_TIMEOUT_STYLE=menu` und `GRUB_DISABLE_OS_PROBER=false`, sichert vorher `/etc/default/grub` und schreibt `/boot/grub/grub.cfg` neu. Standard ist der Klötzchen-Look (Erde, Stein-Knöpfe, Pixel-Titel, Unifont – eigene Texturen, keine Original-Assets) in `/boot/grub/themes/gentoo-rice-blocks`; `--theme blue` nimmt das blaue Theme (unscharfes Wallpaper, JetBrains Mono über `grub-mkfont`). `./install.sh` macht das automatisch, wenn GRUB installiert ist.
+Setzt `GRUB_TIMEOUT`, `GRUB_TIMEOUT_STYLE=menu` und `GRUB_DISABLE_OS_PROBER=false`, erzeugt das Menü auf Englisch mit kurzen Namen (`Gentoo` – bleibt nach Kernel-Updates über `/etc/kernel/postinst.d/99-gentoo-rice-grub`), sichert vorher `/etc/default/grub` und schreibt `/boot/grub/grub.cfg` neu. Standard ist der Klötzchen-Look (Erde, Stein-Knöpfe, Pixel-Titel, Unifont – eigene Texturen, keine Original-Assets) in `/boot/grub/themes/gentoo-rice-blocks`; `--theme blue` nimmt das blaue Theme (unscharfes Wallpaper, JetBrains Mono über `grub-mkfont`). `./install.sh` macht das automatisch, wenn GRUB installiert ist.
 
-### Apps: Spotify + Spicetify, Minecraft Java, Sober, OBS Studio
+### Apps: Spotify + Spicetify, Gaming, OpSec (Proton), OBS Studio
 
 ```bash
-./scripts/apps.sh             # Spotify + Spicetify, Minecraft Java (offizieller Launcher), Sober (Roblox), OBS Studio – alles Flatpak
+./scripts/apps.sh             # Spotify + Spicetify, Minecraft Java, CurseForge, Sober (Roblox), Proton VPN/Pass/Mail/Authenticator, Tor Browser, Signal, OBS Studio – alles Flatpak
 ./scripts/apps.sh spicetify   # Spicetify nach einem Spotify-Update neu anwenden (macht update.sh --system automatisch)
 ```
 
@@ -268,6 +268,7 @@ Am Ende erscheint eine Übersicht der installierten Versionen.
 | `Super + B` | Firefox |
 | `Super + G` | Steam |
 | `Super + S` | Spotify |
+| `Super + Shift + G` | Gaming-Modus an/aus (keine Animationen/Blur/Schatten/Lücken, Hintergrund pausiert; auch per Waybar-Icon) |
 | `Super + E` | Dateimanager |
 | `Super + A` | cava (Audio-Visualizer) |
 | `Super + T` | btop |

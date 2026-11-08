@@ -38,7 +38,7 @@ git clone https://github.com/Real3rr0r303YT/Gentoo-rice && cd Gentoo-rice && ./i
 ```sh
 ./install.sh --dry-run   # nur anzeigen, was installiert/geändert würde (kein sudo, keine Änderungen)
 ./install.sh --no-claude # ohne Claude Code
-./install.sh --no-apps   # ohne Spotify/Spicetify und Minecraft
+./install.sh --no-apps   # ohne Spotify/Spicetify, Minecraft, Sober, OBS
 ./install.sh --no-grub   # GRUB nicht anfassen
 ./install.sh --login     # mit grafischem Login-Screen (SDDM)
 ```
@@ -76,22 +76,23 @@ Mitgeliefert werden nur drei selbst generierte Verlaufs-Platzhalter – keine fr
 ### GRUB-Bootmenü
 
 ```sh
-./scripts/grub-setup.sh               # blaues Theme, Menü 5 s sichtbar, Windows-Eintrag über os-prober
+./scripts/grub-setup.sh               # Klötzchen-Theme, Menü 5 s sichtbar, Windows-Eintrag über os-prober
+./scripts/grub-setup.sh --theme blue  # blaues Theme (passend zum Login-Screen)
 ./scripts/grub-setup.sh --no-theme    # ohne Theme
 ./scripts/grub-setup.sh --timeout 10  # andere Wartezeit
 ./scripts/grub-setup.sh --restore     # Original von /etc/default/grub zurück
 ```
 
-Setzt `GRUB_TIMEOUT`, `GRUB_TIMEOUT_STYLE=menu` und `GRUB_DISABLE_OS_PROBER=false`, sichert vorher `/etc/default/grub` und schreibt `/boot/grub/grub.cfg` neu. Das Theme (unscharfes Wallpaper, blaues Menü, JetBrains Mono über `grub-mkfont`) landet in `/boot/grub/themes/gentoo-rice`. `./install.sh` macht das automatisch, wenn GRUB installiert ist.
+Setzt `GRUB_TIMEOUT`, `GRUB_TIMEOUT_STYLE=menu` und `GRUB_DISABLE_OS_PROBER=false`, sichert vorher `/etc/default/grub` und schreibt `/boot/grub/grub.cfg` neu. Standard ist der Klötzchen-Look (Erde, Stein-Knöpfe, Pixel-Titel, Unifont – eigene Texturen, keine Original-Assets) in `/boot/grub/themes/gentoo-rice-blocks`; `--theme blue` nimmt das blaue Theme (unscharfes Wallpaper, JetBrains Mono über `grub-mkfont`). `./install.sh` macht das automatisch, wenn GRUB installiert ist.
 
-### Apps: Spotify + Spicetify, Minecraft Java
+### Apps: Spotify + Spicetify, Minecraft Java, Sober, OBS Studio
 
 ```bash
-./scripts/apps.sh             # Spotify (Flatpak) + Spicetify, Prism Launcher (Minecraft Java)
+./scripts/apps.sh             # Spotify + Spicetify, Minecraft Java (offizieller Launcher), Sober (Roblox), OBS Studio – alles Flatpak
 ./scripts/apps.sh spicetify   # Spicetify nach einem Spotify-Update neu anwenden (macht update.sh --system automatisch)
 ```
 
-Spicetify nutzt das Theme `GentooRice` mit den aktuellen Rice-Farben (wird bei jedem Wallpaper-/Theme-Wechsel angepasst). `Super + S` öffnet Spotify; Minecraft: Prism Launcher → Microsoft-Konto hinzufügen → Instanz anlegen.
+Spicetify nutzt das Theme `GentooRice` mit den aktuellen Rice-Farben (wird bei jedem Wallpaper-/Theme-Wechsel angepasst). `Super + S` öffnet Spotify; Minecraft, Roblox (Sober) und OBS stehen im Rice-Menü (`Super + D`) und im Launcher.
 
 ### Deinstallation
 
@@ -262,7 +263,7 @@ Am Ende erscheint eine Übersicht der installierten Versionen.
 | `Super + Leertaste` | Launcher (rofi) |
 | `Super + W` | Wallpaper-Picker (Bilder, Videos, Wallpaper Engine) |
 | `Super + Shift + W` | Zufälliges Wallpaper |
-| `Super + D` | Rice-Menü (Apps, Spotify, Minecraft, Theme, Wallpaper, Login-Screen, Update, Tastenkürzel) |
+| `Super + D` | Rice-Menü (Apps, Spotify, Minecraft, Roblox, OBS, Theme, Wallpaper, Login-Screen, Update, Tastenkürzel) |
 | `Super + Shift + T` | Theme-Wechsler |
 | `Super + B` | Firefox |
 | `Super + G` | Steam |

@@ -25,8 +25,8 @@ for arg in "$@"; do
             printf '  --dev      zusätzlich Entwickler-Setup (scripts/dev-setup.sh)\n'
             printf '  --we       zusätzlich Wallpaper Engine (scripts/wallpaperengine.sh)\n'
             printf '  --login    grafischer Login-Screen (SDDM, Wayland); --login=minecraft für den Klötzchen-Look\n'
-            printf '  --no-grub  GRUB nicht anfassen (Standard: blaues Theme, Menü 5 s, Windows-Eintrag)\n'
-            printf '  --no-apps  ohne Spotify + Spicetify und Minecraft Java (Prism Launcher)\n'
+            printf '  --no-grub  GRUB nicht anfassen (Standard: Klötzchen-Theme, Menü 5 s, Windows-Eintrag)\n'
+            printf '  --no-apps  ohne Spotify + Spicetify, Minecraft Java, Sober (Roblox), OBS Studio\n'
             printf '  --no-claude  Claude Code nicht installieren\n'
             printf '  --dry-run  nur anzeigen, was installiert/geändert würde (keine Änderungen)\n'
             exit 0 ;;
@@ -553,11 +553,11 @@ else
 fi
 DONE+=("gamemode, mangohud, Flatpak + Flathub, Steam, Proton-GE, ProtonUp-Qt, Bottles")
 
-# ── Apps: Spotify + Spicetify, Minecraft Java ──────────────
+# ── Apps: Spotify + Spicetify, Minecraft Java, Sober, OBS ──
 if [[ $APPS -eq 1 ]]; then
-    step "Apps: Spotify + Spicetify, Minecraft Java"
+    step "Apps: Spotify + Spicetify, Minecraft Java, Sober, OBS Studio"
     if [[ $DRY_RUN -eq 1 ]]; then info "würde ausführen: ./scripts/apps.sh"
-    elif "$REPO/scripts/apps.sh"; then DONE+=("Spotify + Spicetify (Rice-Farben), Minecraft Java (Prism Launcher)")
+    elif "$REPO/scripts/apps.sh"; then DONE+=("Spotify + Spicetify (Rice-Farben), Minecraft Java, Sober (Roblox), OBS Studio")
     else warn "Apps unvollständig"; FAILED+=("Apps (einzeln: ./scripts/apps.sh)"); fi
 fi
 
@@ -591,9 +591,9 @@ fi
 
 # ── GRUB ───────────────────────────────────────────────────
 if [[ $GRUB -eq 1 ]]; then
-    step "GRUB-Bootmenü (blaues Theme, 5 s, Windows-Eintrag)"
+    step "GRUB-Bootmenü (Klötzchen-Theme, 5 s, Windows-Eintrag)"
     if [[ $DRY_RUN -eq 1 ]]; then info "würde ausführen: ./scripts/grub-setup.sh --timeout 5"
-    elif "$REPO/scripts/grub-setup.sh" --timeout 5; then DONE+=("GRUB: blaues Theme, Menü 5 s sichtbar, Windows über os-prober")
+    elif "$REPO/scripts/grub-setup.sh" --timeout 5; then DONE+=("GRUB: Klötzchen-Theme, Menü 5 s sichtbar, Windows über os-prober")
     else warn "GRUB-Einrichtung fehlgeschlagen"; FAILED+=("GRUB (einzeln: ./scripts/grub-setup.sh)"); fi
 fi
 

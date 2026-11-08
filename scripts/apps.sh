@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Gentoo-rice – Extra-Apps (Flatpak, ohne sudo):
-#   Spotify + Spicetify (Theme in den Rice-Farben), Minecraft Java (Prism Launcher)
+#   Spotify + Spicetify (Theme in den Rice-Farben), Minecraft Java (offizieller Launcher),
+#   Sober (Roblox), OBS Studio
 # Copyright (C) 2026 3rr0r303YT – GPL-3.0-or-later
 #
 # Nutzung: ./scripts/apps.sh               alles installieren/aktualisieren
@@ -13,7 +14,12 @@ MODE=${1:-all}
 case $MODE in all|spicetify|sync) ;; -h|--help) sed -n '2,9p' "$0"; exit 0 ;; *) echo "Unbekannt: $MODE" >&2; exit 1 ;; esac
 
 SPOTIFY_ID=com.spotify.Client
-MINECRAFT_ID=org.prismlauncher.PrismLauncher
+# weitere Apps: "<Flatpak-ID>|<Name>|<Hinweis>"
+EXTRA_APPS=(
+    "com.mojang.Minecraft|Minecraft Java (offizieller Launcher)|Mit dem Microsoft-Konto anmelden, Java Edition starten"
+    "org.vinegarhq.Sober|Sober (Roblox)|Beim ersten Start mit dem Roblox-Konto anmelden"
+    "com.obsproject.Studio|OBS Studio|Bildschirm aufnehmen: Quelle 'Bildschirmaufnahme (PipeWire)'"
+)
 SPICE_HOME="$HOME/.spicetify"
 SPICE_BIN="$HOME/.local/bin/spicetify"
 SPICE_CFG="$HOME/.config/spicetify"
@@ -86,17 +92,18 @@ spicetify_apply() {
     fi
 }
 
-printf '%s\n' "${B}Gentoo-rice${N} ${D}– Apps: Spotify + Spicetify, Minecraft Java${N}"
+printf '%s\n' "${B}Gentoo-rice${N} ${D}– Apps: Spotify + Spicetify, Minecraft Java, Sober, OBS Studio${N}"
 command -v flatpak >/dev/null || die "flatpak fehlt (./install.sh richtet es ein)."
 flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo >>"$LOG" 2>&1 || true
 
 if [[ $MODE == all ]]; then
     step "Spotify"
     flatpak_app "$SPOTIFY_ID" "Spotify" || true
-    step "Minecraft Java (Prism Launcher)"
-    if flatpak_app "$MINECRAFT_ID" "Prism Launcher"; then
-        info "Start: Rofi → Prism Launcher → Microsoft-Konto hinzufügen → Instanz anlegen"
-    fi
+    step "Minecraft Java, Sober (Roblox), OBS Studio"
+    for entry in "${EXTRA_APPS[@]}"; do
+        IFS='|' read -r id name hint <<<"$entry"
+        if flatpak_app "$id" "$name"; then info "$hint"; fi
+    done
 fi
 
 step "Spicetify"

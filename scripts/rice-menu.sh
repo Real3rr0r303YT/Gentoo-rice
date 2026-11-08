@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Gentoo-rice – Rice-Menü (Super+D / Paletten-Icon in der Waybar):
-# Apps, Spotify, Minecraft, Theme, Wallpaper, Login-Screen, Update, Tastenkürzel, Power
+# Apps, Spotify, Minecraft, Roblox (Sober), OBS, Theme, Wallpaper, Login-Screen, Update, Tastenkürzel, Power
 set -uo pipefail
 export PATH="$HOME/.local/bin:$PATH"
 DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
@@ -38,6 +38,8 @@ choice=$(printf '%s\n' \
     "󰀻  Apps" \
     "󰓇  Spotify" \
     "󰍳  Minecraft" \
+    "󰺵  Roblox (Sober)" \
+    "󰕧  OBS Studio" \
     "󰏘  Theme ändern" \
     "󰋩  Wallpaper wählen" \
     "󰒝  Zufalls-Wallpaper" \
@@ -45,12 +47,14 @@ choice=$(printf '%s\n' \
     "󰚰  Rice aktualisieren" \
     "󰌌  Tastenkürzel" \
     "󰐥  Power-Menü" |
-    rofi -dmenu -i -p "Rice" -theme "$THEME" -theme-str 'window { width: 320px; } listview { lines: 10; }')
+    rofi -dmenu -i -p "Rice" -theme "$THEME" -theme-str 'window { width: 320px; } listview { lines: 12; }')
 
 case "$choice" in
     *"  Apps")            exec rofi -show drun ;;
     *"  Spotify")         exec flatpak run com.spotify.Client ;;
-    *"  Minecraft")       exec flatpak run org.prismlauncher.PrismLauncher ;;
+    *"  Minecraft")       exec flatpak run com.mojang.Minecraft ;;
+    *"Roblox (Sober)")    exec flatpak run org.vinegarhq.Sober ;;
+    *"  OBS Studio")      exec flatpak run com.obsproject.Studio ;;
     *"Theme ändern")      exec "$DIR/theme-picker.sh" ;;
     *"Wallpaper wählen")  exec "$DIR/wallpaper-picker.sh" ;;
     *"Zufalls-Wallpaper") exec "$DIR/wallpaper.sh" random ;;

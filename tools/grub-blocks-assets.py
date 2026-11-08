@@ -65,10 +65,10 @@ def pixel_text(text, zoom, fill, shadow, fill_tex=None):
     return small.resize((w * zoom, h * zoom), Image.NEAREST)
 
 
-title = pixel_text("GENTOO-RICE", 7, None, (40, 40, 44, 255), fill_tex=tex("stone"))
+title = pixel_text("GENTOO", 8, None, (40, 40, 44, 255), fill_tex=tex("stone"))
 title.save(os.path.join(OUT, "title.png"))
 
-splash = pixel_text("Jetzt mit Hyprland!", 2, (255, 255, 0, 255), (63, 63, 0, 255))
+splash = pixel_text("Now with Hyprland!", 2, (255, 255, 0, 255), (63, 63, 0, 255))
 splash = splash.rotate(18, resample=Image.NEAREST, expand=True)
 splash.save(os.path.join(OUT, "splash.png"))
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Gentoo-rice – Extra-Apps (Flatpak, ohne sudo):
-#   Spotify + Spicetify (Theme in den Rice-Farben), Minecraft Java (offizieller Launcher),
-#   Sober (Roblox), OBS Studio
+#   Spotify + Spicetify (Theme in den Rice-Farben), Gaming (Minecraft Java, CurseForge, Sober),
+#   OpSec (Proton VPN/Pass/Mail/Authenticator, Tor Browser, Signal), OBS Studio
 # Copyright (C) 2026 3rr0r303YT – GPL-3.0-or-later
 #
 # Nutzung: ./scripts/apps.sh               alles installieren/aktualisieren
@@ -14,11 +14,22 @@ MODE=${1:-all}
 case $MODE in all|spicetify|sync) ;; -h|--help) sed -n '2,9p' "$0"; exit 0 ;; *) echo "Unbekannt: $MODE" >&2; exit 1 ;; esac
 
 SPOTIFY_ID=com.spotify.Client
-# weitere Apps: "<Flatpak-ID>|<Name>|<Hinweis>"
-EXTRA_APPS=(
-    "com.mojang.Minecraft|Minecraft Java (offizieller Launcher)|Mit dem Microsoft-Konto anmelden, Java Edition starten"
-    "org.vinegarhq.Sober|Sober (Roblox)|Beim ersten Start mit dem Roblox-Konto anmelden"
-    "com.obsproject.Studio|OBS Studio|Bildschirm aufnehmen: Quelle 'Bildschirmaufnahme (PipeWire)'"
+# weitere Apps: "<Flatpak-ID[,Alternative]>|<Name>|<Hinweis>|<optional: 1 = fehlt auf Flathub ist ok>"
+GAMING_APPS=(
+    "com.mojang.Minecraft|Minecraft Java (offizieller Launcher)|Mit dem Microsoft-Konto anmelden, Java Edition starten|0"
+    "com.overwolf.curseforge|CurseForge (Mods/Modpacks)|Minecraft-Modpacks installieren|1"
+    "org.vinegarhq.Sober|Sober (Roblox)|Beim ersten Start mit dem Roblox-Konto anmelden|0"
+)
+OPSEC_APPS=(
+    "com.protonvpn.www|Proton VPN|Anmelden → Schnellverbindung, Kill Switch in den Einstellungen|0"
+    "me.proton.Pass|Proton Pass|Passwort-Manager|1"
+    "me.proton.Mail|Proton Mail|Desktop-App|1"
+    "me.proton.Authenticator|Proton Authenticator|2FA-Codes|1"
+    "org.torproject.torbrowser-launcher,com.github.micahflee.torbrowser-launcher|Tor Browser|Erster Start lädt den Tor Browser herunter|0"
+    "org.signal.Signal|Signal|Messenger mit Ende-zu-Ende-Verschlüsselung|0"
+)
+MEDIA_APPS=(
+    "com.obsproject.Studio|OBS Studio|Bildschirm aufnehmen: Quelle 'Bildschirmaufnahme (PipeWire)'|0"
 )
 SPICE_HOME="$HOME/.spicetify"
 SPICE_BIN="$HOME/.local/bin/spicetify"
@@ -35,15 +46,30 @@ if [[ $MODE == sync ]]; then
 fi
 
 TOTAL=1 STEP_LABEL=apps
-if [[ $MODE == all ]]; then TOTAL=3; fi
+if [[ $MODE == all ]]; then TOTAL=5; fi
 export GENTOO_RICE_SUDO_LOOP=1   # kein sudo nötig
 # shellcheck source=scripts/lib.sh
 source "$REPO/scripts/lib.sh"
 
-flatpak_app() { # flatpak_app <id> <name>
-    if flatpak info --user "$1" >/dev/null 2>&1; then ok "$2 vorhanden"
-    elif flatpak install --user -y --noninteractive flathub "$1" >>"$LOG" 2>&1; then ok "$2 installiert"
-    else warn "$2 konnte nicht installiert werden (Details im Log)"; FAILED+=("$1 (Flatpak)"); return 1; fi
+flatpak_app() { # flatpak_app <id[,alternative…]> <name> [optional]
+    local id ids
+    IFS=',' read -ra ids <<<"$1"
+    for id in "${ids[@]}"; do
+        if flatpak info --user "$id" >/dev/null 2>&1; then ok "$2 vorhanden"; return 0; fi
+    done
+    for id in "${ids[@]}"; do
+        if flatpak install --user -y --noninteractive flathub "$id" >>"$LOG" 2>&1; then ok "$2 installiert"; return 0; fi
+    done
+    if [[ ${3:-0} == 1 ]]; then info "$2 nicht auf Flathub verfügbar – übersprungen"; return 1; fi
+    warn "$2 konnte nicht installiert werden (Details im Log)"; FAILED+=("${ids[0]} (Flatpak)"); return 1
+}
+
+app_list() { # app_list <eintrag…>
+    local entry id name hint opt
+    for entry in "$@"; do
+        IFS='|' read -r id name hint opt <<<"$entry"
+        if flatpak_app "$id" "$name" "$opt"; then info "$hint"; fi
+    done
 }
 
 spicetify_cli() { # neueste Version von GitHub nach ~/.spicetify
@@ -92,18 +118,19 @@ spicetify_apply() {
     fi
 }
 
-printf '%s\n' "${B}Gentoo-rice${N} ${D}– Apps: Spotify + Spicetify, Minecraft Java, Sober, OBS Studio${N}"
+printf '%s\n' "${B}Gentoo-rice${N} ${D}– Apps: Spotify + Spicetify, Gaming, OpSec (Proton), OBS Studio${N}"
 command -v flatpak >/dev/null || die "flatpak fehlt (./install.sh richtet es ein)."
 flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo >>"$LOG" 2>&1 || true
 
 if [[ $MODE == all ]]; then
     step "Spotify"
     flatpak_app "$SPOTIFY_ID" "Spotify" || true
-    step "Minecraft Java, Sober (Roblox), OBS Studio"
-    for entry in "${EXTRA_APPS[@]}"; do
-        IFS='|' read -r id name hint <<<"$entry"
-        if flatpak_app "$id" "$name"; then info "$hint"; fi
-    done
+    step "Gaming: Minecraft Java, CurseForge, Sober (Roblox)"
+    app_list "${GAMING_APPS[@]}"
+    step "OpSec: Proton VPN, Proton Pass, Proton Mail, Tor Browser, Signal"
+    app_list "${OPSEC_APPS[@]}"
+    step "OBS Studio"
+    app_list "${MEDIA_APPS[@]}"
 fi
 
 step "Spicetify"

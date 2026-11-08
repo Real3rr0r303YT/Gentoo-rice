@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Gentoo-rice – Rice-Menü (Super+D / Paletten-Icon in der Waybar):
-# Apps, Spotify, Minecraft, Roblox (Sober), OBS, Theme, Wallpaper, Login-Screen, Update, Tastenkürzel, Power
+# Gaming-Modus, Apps, Spotify, Minecraft, Roblox, CurseForge, Proton VPN, Tor, OBS, Theme, Wallpaper, Login-Screen, Update, Tastenkürzel, Power
 set -uo pipefail
 export PATH="$HOME/.local/bin:$PATH"
 DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
@@ -23,6 +23,7 @@ keys() {
         "Super + E              Dateien" \
         "Super + G              Steam" \
         "Super + S              Spotify" \
+        "Super + Shift + G      Gaming-Modus an/aus" \
         "Super + K              Claude Code" \
         "Super + Q              Fenster schließen" \
         "Super + V              Schwebend an/aus" \
@@ -35,10 +36,14 @@ keys() {
 }
 
 choice=$(printf '%s\n' \
+    "󰊗  Gaming-Modus an/aus" \
     "󰀻  Apps" \
     "󰓇  Spotify" \
     "󰍳  Minecraft" \
     "󰺵  Roblox (Sober)" \
+    "󰪺  CurseForge" \
+    "󰖂  Proton VPN" \
+    "󰒃  Tor Browser" \
     "󰕧  OBS Studio" \
     "󰏘  Theme ändern" \
     "󰋩  Wallpaper wählen" \
@@ -47,7 +52,7 @@ choice=$(printf '%s\n' \
     "󰚰  Rice aktualisieren" \
     "󰌌  Tastenkürzel" \
     "󰐥  Power-Menü" |
-    rofi -dmenu -i -p "Rice" -theme "$THEME" -theme-str 'window { width: 320px; } listview { lines: 12; }')
+    rofi -dmenu -i -p "Rice" -theme "$THEME" -theme-str 'window { width: 320px; } listview { lines: 14; }')
 
 case "$choice" in
     *"  Apps")            exec rofi -show drun ;;
@@ -55,6 +60,12 @@ case "$choice" in
     *"  Minecraft")       exec flatpak run com.mojang.Minecraft ;;
     *"Roblox (Sober)")    exec flatpak run org.vinegarhq.Sober ;;
     *"  OBS Studio")      exec flatpak run com.obsproject.Studio ;;
+    *"Gaming-Modus an/aus") exec "$DIR/gaming-mode.sh" toggle ;;
+    *"  CurseForge")      exec flatpak run com.overwolf.curseforge ;;
+    *"  Proton VPN")      exec flatpak run com.protonvpn.www ;;
+    *"  Tor Browser")
+        if flatpak info --user org.torproject.torbrowser-launcher >/dev/null 2>&1; then exec flatpak run org.torproject.torbrowser-launcher
+        else exec flatpak run com.github.micahflee.torbrowser-launcher; fi ;;
     *"Theme ändern")      exec "$DIR/theme-picker.sh" ;;
     *"Wallpaper wählen")  exec "$DIR/wallpaper-picker.sh" ;;
     *"Zufalls-Wallpaper") exec "$DIR/wallpaper.sh" random ;;

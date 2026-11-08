@@ -26,7 +26,7 @@ for arg in "$@"; do
             printf '  --we       zusätzlich Wallpaper Engine (scripts/wallpaperengine.sh)\n'
             printf '  --login    grafischer Login-Screen (SDDM, Wayland); --login=minecraft für den Klötzchen-Look\n'
             printf '  --no-grub  GRUB nicht anfassen (Standard: Klötzchen-Theme, Menü 5 s, Windows-Eintrag)\n'
-            printf '  --no-apps  ohne Spotify + Spicetify, Minecraft Java, Sober (Roblox), OBS Studio\n'
+            printf '  --no-apps  ohne Spotify + Spicetify, Gaming-Apps (Minecraft, CurseForge, Sober), Proton/OpSec-Apps, OBS\n'
             printf '  --no-claude  Claude Code nicht installieren\n'
             printf '  --dry-run  nur anzeigen, was installiert/geändert würde (keine Änderungen)\n'
             exit 0 ;;
@@ -555,9 +555,9 @@ DONE+=("gamemode, mangohud, Flatpak + Flathub, Steam, Proton-GE, ProtonUp-Qt, Bo
 
 # ── Apps: Spotify + Spicetify, Minecraft Java, Sober, OBS ──
 if [[ $APPS -eq 1 ]]; then
-    step "Apps: Spotify + Spicetify, Minecraft Java, Sober, OBS Studio"
+    step "Apps: Spotify, Gaming, OpSec (Proton), OBS Studio"
     if [[ $DRY_RUN -eq 1 ]]; then info "würde ausführen: ./scripts/apps.sh"
-    elif "$REPO/scripts/apps.sh"; then DONE+=("Spotify + Spicetify (Rice-Farben), Minecraft Java, Sober (Roblox), OBS Studio")
+    elif "$REPO/scripts/apps.sh"; then DONE+=("Spotify + Spicetify, Minecraft, CurseForge, Sober, Proton VPN/Pass, Tor Browser, Signal, OBS")
     else warn "Apps unvollständig"; FAILED+=("Apps (einzeln: ./scripts/apps.sh)"); fi
 fi
 

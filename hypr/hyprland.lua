@@ -36,6 +36,14 @@ if ok_look and type(theme_look) == "table" then
     for k, v in pairs(theme_look) do look[k] = v end
 end
 
+-- Gaming-Modus (scripts/gaming-mode.sh → ~/.cache/rice/gaming.lua): keine Effekte, keine Lücken
+local ok_gm, gm = pcall(dofile, home .. "/.cache/rice/gaming.lua")
+local gaming = ok_gm and gm == true
+if gaming then
+    look.gaps_in, look.gaps_out, look.rounding = 0, 0, 0
+    look.active_opacity, look.inactive_opacity = 1.0, 1.0
+end
+
 ---------------------
 ---- PROGRAMME ------
 ---------------------
@@ -117,7 +125,7 @@ hl.config({
         fullscreen_opacity = 1.0,
 
         blur = {
-            enabled           = true,
+            enabled           = not gaming,
             size              = look.blur_size,
             passes            = look.blur_passes,
             new_optimizations = true,
@@ -130,7 +138,7 @@ hl.config({
         },
 
         shadow = {
-            enabled      = true,
+            enabled      = not gaming,
             range        = 24,
             render_power = 3,
             color        = "rgba(00000088)",
@@ -138,7 +146,7 @@ hl.config({
     },
 
     animations = {
-        enabled = true,
+        enabled = not gaming,
     },
 
     dwindle = {
@@ -278,6 +286,7 @@ hl.bind(mod .. " + Space",       exec(menu))
 hl.bind(mod .. " + E",           exec(files))
 hl.bind(mod .. " + B",           exec(browser))
 hl.bind(mod .. " + G",           exec(steam))
+hl.bind(mod .. " + SHIFT + G",   exec(scripts .. "/gaming-mode.sh toggle"))
 hl.bind(mod .. " + S",           exec(spotify))
 hl.bind(mod .. " + W",           exec(scripts .. "/wallpaper-picker.sh"))
 hl.bind(mod .. " + SHIFT + W",   exec(scripts .. "/wallpaper.sh random"))

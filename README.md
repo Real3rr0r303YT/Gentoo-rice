@@ -83,12 +83,12 @@ Only three self-generated gradient placeholders ship with the repo – no third-
 ./scripts/grub-setup.sh --restore     # restore the original /etc/default/grub
 ```
 
-Sets `GRUB_TIMEOUT`, `GRUB_TIMEOUT_STYLE=menu` and `GRUB_DISABLE_OS_PROBER=false`, backs up `/etc/default/grub` first and regenerates `/boot/grub/grub.cfg`. The default is the block look (dirt, stone buttons, pixel title, Unifont – own textures, no original assets) in `/boot/grub/themes/gentoo-rice-blocks`; `--theme blue` uses the blue theme (blurred wallpaper, JetBrains Mono via `grub-mkfont`). `./install.sh` runs this automatically when GRUB is installed.
+Sets `GRUB_TIMEOUT`, `GRUB_TIMEOUT_STYLE=menu` and `GRUB_DISABLE_OS_PROBER=false`, generates the menu in English with short entry names (`Gentoo` – kept after kernel updates via `/etc/kernel/postinst.d/99-gentoo-rice-grub`), backs up `/etc/default/grub` first and regenerates `/boot/grub/grub.cfg`. The default is the block look (dirt, stone buttons, pixel title, Unifont – own textures, no original assets) in `/boot/grub/themes/gentoo-rice-blocks`; `--theme blue` uses the blue theme (blurred wallpaper, JetBrains Mono via `grub-mkfont`). `./install.sh` runs this automatically when GRUB is installed.
 
-### Apps: Spotify + Spicetify, Minecraft Java, Sober, OBS Studio
+### Apps: Spotify + Spicetify, gaming, OpSec (Proton), OBS Studio
 
 ```bash
-./scripts/apps.sh             # Spotify + Spicetify, Minecraft Java (official launcher), Sober (Roblox), OBS Studio – all Flatpak
+./scripts/apps.sh             # Spotify + Spicetify, Minecraft Java, CurseForge, Sober (Roblox), Proton VPN/Pass/Mail/Authenticator, Tor Browser, Signal, OBS Studio – all Flatpak
 ./scripts/apps.sh spicetify   # re-apply Spicetify after a Spotify update (update.sh --system does this)
 ```
 
@@ -268,6 +268,7 @@ A summary of installed versions is printed at the end.
 | `Super + B` | Firefox |
 | `Super + G` | Steam |
 | `Super + S` | Spotify |
+| `Super + Shift + G` | Gaming mode on/off (no animations/blur/shadows/gaps, wallpaper paused; also via Waybar icon) |
 | `Super + E` | File manager |
 | `Super + A` | cava (audio visualizer) |
 | `Super + T` | btop |

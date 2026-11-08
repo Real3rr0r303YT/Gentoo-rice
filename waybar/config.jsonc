@@ -10,7 +10,7 @@
     "exclusive": true,
     "modules-left":   ["custom/music", "custom/prev", "custom/play", "custom/next", "mpris"],
     "modules-center": ["hyprland/workspaces"],
-    "modules-right":  ["cpu", "memory", "pulseaudio", "network", "bluetooth", "battery", "clock", "custom/theme", "custom/power"],
+    "modules-right":  ["cpu", "memory", "pulseaudio", "network", "bluetooth", "battery", "clock", "custom/gaming", "custom/theme", "custom/power"],
 
     "custom/music": {
         "format": "",
@@ -102,6 +102,13 @@
         "format-alt": "{:%a %-d. %b  %H:%M}",
         "tooltip-format": "<tt>{calendar}</tt>",
         "calendar": { "mode": "month", "format": { "today": "<b><u>{}</u></b>" } }
+    },
+    "custom/gaming": {
+        "exec": "~/.local/share/gentoo-rice/scripts/gaming-mode.sh status",
+        "return-type": "json",
+        "interval": "once",
+        "signal": 9,
+        "on-click": "~/.local/share/gentoo-rice/scripts/gaming-mode.sh toggle"
     },
     "custom/theme": {
         "format": "",

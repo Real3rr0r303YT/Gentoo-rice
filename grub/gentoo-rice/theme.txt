@@ -16,7 +16,7 @@ terminal-box: "menu_*.png"
     width = 100%
     height = 48
     align = "center"
-    text = "Gentoo-rice"
+    text = "Gentoo"
     font = "Rice Bold 32"
     color = "#e6edf7"
 }
@@ -26,7 +26,7 @@ terminal-box: "menu_*.png"
     width = 100%
     height = 24
     align = "center"
-    text = "Was möchtest du starten?"
+    text = "Choose an operating system"
     font = "Rice Regular 16"
     color = "#22d3ee"
 }
@@ -58,7 +58,7 @@ terminal-box: "menu_*.png"
     width = 100%
     height = 24
     align = "center"
-    text = "Start in %d s"
+    text = "Booting in %d s"
     font = "Rice Bold 16"
     color = "#22d3ee"
 }
@@ -68,7 +68,7 @@ terminal-box: "menu_*.png"
     width = 100%
     height = 24
     align = "center"
-    text = "Pfeiltasten: auswählen  ·  Enter: starten  ·  e: bearbeiten  ·  c: Konsole"
+    text = "Arrows: select  ·  Enter: boot  ·  e: edit  ·  c: console"
     font = "Rice Regular 14"
     color = "#64748b"
 }

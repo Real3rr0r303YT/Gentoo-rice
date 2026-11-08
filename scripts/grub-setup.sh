@@ -36,6 +36,9 @@ source "$REPO/scripts/lib.sh"
 CFG=/etc/default/grub
 ORIG=/etc/default/grub.gentoo-rice.orig
 THEME_DIR="" THEME_FONT=""
+# Kernel-Update-Hook: Menü nach jedem neuen Kernel wieder englisch + kurz ("Gentoo")
+HOOK=/etc/kernel/postinst.d/99-gentoo-rice-grub
+SHORTEN='/^[[:space:]]*(menuentry|submenu) /s| GNU/Linux||g'
 
 # Ausgabedatei von grub-mkconfig finden (Gentoo: /boot/grub/grub.cfg)
 grub_cfg() {
@@ -52,13 +55,18 @@ mkconfig() {
     info "grub-mkconfig -o $out"
     local tmp
     tmp=$(mktemp)
-    if ! $SUDO grub-mkconfig -o "$out" >"$tmp" 2>&1; then
+    # LANG=C: Menü und GRUB-Meldungen auf Englisch
+    if ! $SUDO env LANG=C LC_ALL=C LANGUAGE= grub-mkconfig -o "$out" >"$tmp" 2>&1; then
         cat "$tmp" >> "$LOG"; rm -f "$tmp"
         die "grub-mkconfig fehlgeschlagen – Details im Log. Altes Bootmenü bleibt unverändert."
     fi
     cat "$tmp" >> "$LOG"
     grep -iE 'found|warn' "$tmp" | sed 's/^/  · /' || true
     rm -f "$tmp"
+    if ((!RESTORE)); then
+        # nur der Name des Betriebssystems: "Gentoo" statt "Gentoo GNU/Linux"
+        $SUDO sed -i -E "$SHORTEN" "$out"
+    fi
     if $SUDO grep -qiE "menuentry ['\"]?Windows" "$out"; then ok "Windows-Eintrag im Bootmenü"
     else info "Kein Windows gefunden (normal, wenn nur Gentoo installiert ist)"; fi
     ok "Bootmenü geschrieben: $out"
@@ -163,6 +171,7 @@ if ((RESTORE)); then
     [[ -f $ORIG ]] || die "Kein Backup ($ORIG) vorhanden."
     $SUDO cp -a "$ORIG" "$CFG"
     ok "$CFG aus $ORIG wiederhergestellt"
+    if [[ -f $HOOK ]]; then $SUDO rm -f "$HOOK"; ok "Kernel-Hook entfernt: $HOOK"; fi
     step "Bootmenü neu erzeugen"
     mkconfig
     exit 0
@@ -222,6 +231,21 @@ for k in "${KEYS[@]}"; do
     if ((n > 1)); then $SUDO sed -i -E "0,/^$k=/! { /^$k=/d }" "$CFG"; fi
 done
 ok "$CFG angepasst"
+
+# Kernel-Updates (installkernel) erzeugen das Menü neu → danach wieder englisch + kurz
+write_root "$HOOK" <<HOOK_EOF
+#!/bin/sh
+# Gentoo-rice (scripts/grub-setup.sh): GRUB-Menü nach Kernel-Updates englisch und kurz ("Gentoo")
+for d in /boot/grub /boot/grub2 /efi/grub /boot/efi/grub; do
+    if [ -f "\$d/grub.cfg" ]; then
+        LANG=C LC_ALL=C LANGUAGE= grub-mkconfig -o "\$d/grub.cfg" >/dev/null 2>&1 || exit 0
+        sed -i -E '$SHORTEN' "\$d/grub.cfg"
+        break
+    fi
+done
+exit 0
+HOOK_EOF
+$SUDO chmod 0755 "$HOOK"
 
 # ── 5. Bootmenü erzeugen ──────────────────────────────────
 step "Bootmenü neu erzeugen"

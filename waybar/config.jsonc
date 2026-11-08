@@ -105,8 +105,8 @@
     },
     "custom/theme": {
         "format": "",
-        "tooltip-format": "Theme wechseln (Super+Shift+T)",
-        "on-click": "~/.local/share/gentoo-rice/scripts/theme-picker.sh",
+        "tooltip-format": "Rice-Menü: Theme, Wallpaper … (Super+D)\nRechtsklick: Wallpaper",
+        "on-click": "~/.local/share/gentoo-rice/scripts/rice-menu.sh",
         "on-click-right": "~/.local/share/gentoo-rice/scripts/wallpaper-picker.sh"
     },
     "custom/power": {

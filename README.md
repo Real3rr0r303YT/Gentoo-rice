@@ -250,6 +250,7 @@ A summary of installed versions is printed at the end.
 | `Super + Space` | Launcher (rofi) |
 | `Super + W` | Wallpaper picker (images, videos, Wallpaper Engine) |
 | `Super + Shift + W` | Random wallpaper |
+| `Super + D` | Rice menu (theme, wallpaper, login screen, update, keybindings) |
 | `Super + Shift + T` | Theme switcher |
 | `Super + B` | Firefox |
 | `Super + G` | Steam |
@@ -262,7 +263,8 @@ A summary of installed versions is printed at the end.
 | `Super + Y` | Lyrics overlay (toggle) |
 | `Super + K` | Claude Code (terminal) |
 | `Super + Q` | Close window |
-| `Super + F` | Fullscreen |
+| `Super + F` | Firefox |
+| `Super + Shift + F` | Fullscreen |
 | `Super + V` | Toggle floating |
 | `Super + P` | Pseudo tiling |
 | `Super + J` | Toggle split |

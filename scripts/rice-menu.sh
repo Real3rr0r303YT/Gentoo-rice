@@ -44,6 +44,9 @@ choice=$(printf '%s\n' \
     "󰪺  CurseForge" \
     "󰖂  Mullvad VPN" \
     "󰒃  Tor Browser" \
+    "󰕥  Virenschutz installieren/aktualisieren" \
+    "󰕥  Virenscan (Home)" \
+    "󰨟  Quarantäne öffnen" \
     "󰕧  OBS Studio" \
     "󰏘  Theme ändern" \
     "󰋩  Wallpaper wählen" \
@@ -53,7 +56,7 @@ choice=$(printf '%s\n' \
     "󰚰  Rice aktualisieren" \
     "󰌌  Tastenkürzel" \
     "󰐥  Power-Menü" |
-    rofi -dmenu -i -p "Rice" -theme "$THEME" -theme-str 'window { width: 320px; } listview { lines: 14; }')
+    rofi -dmenu -i -p "Rice" -theme "$THEME" -theme-str 'window { width: 360px; } listview { lines: 18; }')
 
 case "$choice" in
     *"  Apps")            exec rofi -show drun ;;
@@ -62,6 +65,9 @@ case "$choice" in
     *"Roblox (Sober)")    exec flatpak run org.vinegarhq.Sober ;;
     *"  OBS Studio")      exec flatpak run com.obsproject.Studio ;;
     *"Gaming-Modus an/aus") exec "$DIR/gaming-mode.sh" toggle ;;
+    *"Virenschutz installieren/aktualisieren") exec kitty --class rice-float --hold "$DIR/antivirus.sh" update ;;
+    *"Virenscan (Home)")  exec kitty --class rice-float --hold "$DIR/antivirus.sh" scan "$HOME" ;;
+    *"Quarantäne öffnen") mkdir -p "$HOME/.local/share/gentoo-rice/quarantine"; exec thunar "$HOME/.local/share/gentoo-rice/quarantine" ;;
     *"  CurseForge")      exec flatpak run com.overwolf.curseforge ;;
     *"  Mullvad VPN")     exec mullvad-vpn ;;
     *"  Tor Browser")

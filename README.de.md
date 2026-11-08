@@ -38,6 +38,7 @@ git clone https://github.com/Real3rr0r303YT/Gentoo-rice && cd Gentoo-rice && ./i
 ```sh
 ./install.sh --dry-run   # nur anzeigen, was installiert/geändert würde (kein sudo, keine Änderungen)
 ./install.sh --no-claude # ohne Claude Code
+./install.sh --no-av     # ohne Virenschutz
 ./install.sh --no-apps   # ohne Spotify/Spicetify, Minecraft, Sober, OBS
 ./install.sh --no-grub   # GRUB nicht anfassen
 ./install.sh --login     # mit grafischem Login-Screen (SDDM)
@@ -84,6 +85,19 @@ Mitgeliefert werden nur drei selbst generierte Verlaufs-Platzhalter – keine fr
 ```
 
 Setzt `GRUB_TIMEOUT`, `GRUB_TIMEOUT_STYLE=menu` und `GRUB_DISABLE_OS_PROBER=false`, erzeugt das Menü auf Englisch mit kurzen Namen (`Gentoo` – bleibt nach Kernel-Updates über `/etc/kernel/postinst.d/99-gentoo-rice-grub`), sichert vorher `/etc/default/grub` und schreibt `/boot/grub/grub.cfg` neu. Standard ist der Klötzchen-Look (Erde, Stein-Knöpfe, Pixel-Titel, Unifont – eigene Texturen, keine Original-Assets) in `/boot/grub/themes/gentoo-rice-blocks`; `--theme blue` nimmt das blaue Theme (unscharfes Wallpaper, JetBrains Mono über `grub-mkfont`). `./install.sh` macht das automatisch, wenn GRUB installiert ist.
+
+### Virenschutz (ClamAV)
+
+```bash
+./scripts/antivirus.sh setup         # ClamAV + Signaturen, Dienste freshclam/clamd (macht ./install.sh automatisch, --no-av)
+./scripts/antivirus.sh update        # installieren bzw. ClamAV + Signaturen aktualisieren (Rice-Menü: „Virenschutz installieren/aktualisieren“)
+./scripts/antivirus.sh scan ~/Downloads   # Ordner prüfen
+```
+
+- **Echtzeit-Wächter** (startet mit Hyprland): neue Dateien in `~/Downloads` sowie Mods/Programme in den Minecraft-, CurseForge- und Sober-Ordnern werden sofort geprüft; Funde landen gesperrt in `~/.local/share/gentoo-rice/quarantine` mit Warnung
+- Minecraft, CurseForge und Sober laufen **abgeschottet** (Flatpak ohne Zugriff auf den Home-Ordner) – ein Schad-Mod kommt nicht an deine Dateien
+- Rice-Menü (`Super + D`): *Virenscan (Home)*, *Quarantäne öffnen*
+- **Ehrlich:** ClamAV erkennt nur bekannte Schadsoftware. Gecrackte Mods/Clients sind der häufigste Weg für Stealer und Trojaner – ein sauberer Scan ist keine Garantie. Gegen Ransomware hilft am meisten ein Backup auf einem getrennten Datenträger.
 
 ### Apps: Spotify + Spicetify, Gaming, OpSec (Proton), OBS Studio
 

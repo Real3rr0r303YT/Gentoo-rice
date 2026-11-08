@@ -38,6 +38,7 @@ git clone https://github.com/Real3rr0r303YT/Gentoo-rice && cd Gentoo-rice && ./i
 ```sh
 ./install.sh --dry-run   # only show what would be installed/changed (no sudo, no changes)
 ./install.sh --no-claude # without Claude Code
+./install.sh --no-av     # without antivirus
 ./install.sh --no-apps   # without Spotify/Spicetify, Minecraft, Sober, OBS
 ./install.sh --no-grub   # leave GRUB untouched
 ./install.sh --login     # with graphical login screen (SDDM)
@@ -84,6 +85,19 @@ Only three self-generated gradient placeholders ship with the repo – no third-
 ```
 
 Sets `GRUB_TIMEOUT`, `GRUB_TIMEOUT_STYLE=menu` and `GRUB_DISABLE_OS_PROBER=false`, generates the menu in English with short entry names (`Gentoo` – kept after kernel updates via `/etc/kernel/postinst.d/99-gentoo-rice-grub`), backs up `/etc/default/grub` first and regenerates `/boot/grub/grub.cfg`. The default is the block look (dirt, stone buttons, pixel title, Unifont – own textures, no original assets) in `/boot/grub/themes/gentoo-rice-blocks`; `--theme blue` uses the blue theme (blurred wallpaper, JetBrains Mono via `grub-mkfont`). `./install.sh` runs this automatically when GRUB is installed.
+
+### Antivirus (ClamAV)
+
+```bash
+./scripts/antivirus.sh setup         # ClamAV + signatures, freshclam/clamd services (./install.sh does this, --no-av)
+./scripts/antivirus.sh update        # install or update ClamAV + signatures (rice menu: "Virenschutz installieren/aktualisieren")
+./scripts/antivirus.sh scan ~/Downloads   # scan a folder
+```
+
+- **Real-time watcher** (starts with Hyprland): new files in `~/Downloads` and mods/programs in the Minecraft, CurseForge and Sober folders are scanned immediately; detections are locked away in `~/.local/share/gentoo-rice/quarantine` with a warning
+- Minecraft, CurseForge and Sober run **sandboxed** (Flatpak without access to your home folder) – a malicious mod can't reach your files
+- Rice menu (`Super + D`): *Virenscan (Home)*, *Quarantäne öffnen*
+- **Honestly:** ClamAV only detects known malware. Cracked mods/clients are the most common way stealers and trojans spread – a clean scan is no guarantee. The best protection against ransomware is a backup on a separate drive.
 
 ### Apps: Spotify + Spicetify, gaming, OpSec (Proton), OBS Studio
 

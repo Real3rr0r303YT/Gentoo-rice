@@ -51,13 +51,14 @@ tooltip label { color: @fg; padding: 2px 4px; }
 #workspaces button.urgent { background: @c1; }
 
 /* Rechts */
-#cpu, #memory, #pulseaudio, #network, #bluetooth, #battery, #clock, #custom-gaming, #custom-theme, #custom-power {
+#cpu, #memory, #custom-brightness, #pulseaudio, #network, #bluetooth, #battery, #clock, #custom-gaming, #custom-theme, #custom-power {
     padding: 0 8px;
     color: @fg;
 }
 #cpu { color: @c2; }
 #memory { color: @c3; }
 #pulseaudio { color: @accent; }
+#custom-brightness { color: @c3; }
 #network { color: @accent2; }
 #pulseaudio.muted, #network.disconnected { color: alpha(@fg, 0.4); }
 #battery.warning:not(.charging) { color: @c3; }

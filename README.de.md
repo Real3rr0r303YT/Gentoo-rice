@@ -104,8 +104,9 @@ Setzt `GRUB_TIMEOUT`, `GRUB_TIMEOUT_STYLE=menu` und `GRUB_DISABLE_OS_PROBER=fals
 ### Apps: Spotify + Spicetify, Gaming, OpSec (Proton), OBS Studio
 
 ```bash
-./scripts/apps.sh             # Spotify + Spicetify, Minecraft Java, CurseForge, Sober (Roblox), Roblox Studio (Vinegar), KDE Connect, Mullvad VPN (GURU), Proton Pass/Mail/Calendar/Authenticator, Tor Browser, Signal, OBS Studio – alles Flatpak
+./scripts/apps.sh             # Spotify + Spicetify, Minecraft Java, CurseForge, Sober (Roblox), Roblox Studio (Vinegar), KDE Connect, Mullvad VPN (GURU), Proton Pass/Authenticator, Proton Mail/Calendar (Web-App), Tor Browser, Signal, OBS Studio – alles Flatpak
 ./scripts/mullvad.sh status    # Mullvad prüfen; ./scripts/mullvad.sh setup richtet den OpenRC-Dienst ein
+./scripts/brightness.sh setup  # Helligkeit in der Waybar (Mausrad), auch für externe Monitore über DDC/CI
 ./scripts/apps.sh update      # alle Apps aktualisieren (auch im Rice-Menü: „Apps aktualisieren“)
 ./scripts/apps.sh spicetify   # Spicetify nach einem Spotify-Update neu anwenden (macht update.sh --system automatisch)
 ```

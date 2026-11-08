@@ -489,6 +489,8 @@ fi
 $FASTFETCH_END
 EOF
 ok "fastfetch beim Öffnen von kitty (~/.bashrc)"
+rice_prompt
+ok "Prompt: nur Benutzername + Ordner (~/.bashrc)"
 DONE+=("Autostart Hyprland auf TTY1, fastfetch in kitty")
 
 # ── 10. Grafik ─────────────────────────────────────────────

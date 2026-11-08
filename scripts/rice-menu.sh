@@ -49,6 +49,7 @@ choice=$(printf '%s\n' \
     "󰋩  Wallpaper wählen" \
     "󰒝  Zufalls-Wallpaper" \
     "󰍂  Login-Screen angleichen" \
+    "󰚰  Apps aktualisieren" \
     "󰚰  Rice aktualisieren" \
     "󰌌  Tastenkürzel" \
     "󰐥  Power-Menü" |
@@ -72,6 +73,7 @@ case "$choice" in
     *"Login-Screen angleichen")
         if "$DIR/sddm-sync.sh" >/dev/null 2>&1; then notify "Login-Screen" "an Wallpaper und Avatar angeglichen"
         else notify "Login-Screen" "nicht eingerichtet – ./install.sh --login"; fi ;;
+    *"Apps aktualisieren") exec kitty --class rice-float --hold "$DIR/apps.sh" update ;;
     *"Rice aktualisieren") exec kitty --class rice-float --hold "$DIR/update.sh" ;;
     *"Tastenkürzel")      keys ;;
     *"Power-Menü")        exec "$DIR/powermenu.sh" ;;

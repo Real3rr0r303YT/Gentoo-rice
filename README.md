@@ -281,7 +281,7 @@ A summary of installed versions is printed at the end.
 | `Super + Space` | Launcher (rofi) |
 | `Super + W` | Wallpaper picker (images, videos, Wallpaper Engine) |
 | `Super + Shift + W` | Random wallpaper |
-| `Super + D` | Rice menu (apps, Spotify, Minecraft, Roblox, OBS, theme, wallpaper, login screen, update, keybindings) |
+| `Super + D` | Rice menu (Gentoo update, apps, Spotify, Minecraft, Roblox, OBS, theme, wallpaper, login screen, update, keybindings) |
 | `Super + Shift + A` | App store: type a name (e.g. firefox), pick from Flathub/Gentoo, install |
 | `Super + Shift + T` | Theme switcher |
 | `Super + B` | Firefox |

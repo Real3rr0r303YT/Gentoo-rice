@@ -279,6 +279,7 @@ Am Ende erscheint eine Übersicht der installierten Versionen.
 | `Super + W` | Wallpaper-Picker (Bilder, Videos, Wallpaper Engine) |
 | `Super + Shift + W` | Zufälliges Wallpaper |
 | `Super + D` | Rice-Menü (Apps, Spotify, Minecraft, Roblox, OBS, Theme, Wallpaper, Login-Screen, Update, Tastenkürzel) |
+| `Super + Shift + A` | App-Store: Namen eintippen (z. B. firefox), aus Flathub/Gentoo auswählen, installieren |
 | `Super + Shift + T` | Theme-Wechsler |
 | `Super + B` | Firefox |
 | `Super + G` | Steam |

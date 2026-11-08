@@ -13,6 +13,7 @@ notify() { command -v notify-send >/dev/null && notify-send -a Gentoo-rice "$@";
 keys() {
     printf '%s\n' \
         "Super + D              Rice-Menü" \
+        "Super + Shift + A      App-Store" \
         "Super + Shift + T      Theme ändern" \
         "Super + W              Wallpaper wählen" \
         "Super + Shift + W      Zufalls-Wallpaper" \
@@ -38,6 +39,7 @@ keys() {
 choice=$(printf '%s\n' \
     "󰊗  Gaming-Modus an/aus" \
     "󰀻  Apps" \
+    "󰏖  App-Store (Apps suchen + installieren)" \
     "󰓇  Spotify" \
     "󰍳  Minecraft" \
     "󰺵  Roblox (Sober)" \
@@ -56,10 +58,11 @@ choice=$(printf '%s\n' \
     "󰚰  Rice aktualisieren" \
     "󰌌  Tastenkürzel" \
     "󰐥  Power-Menü" |
-    rofi -dmenu -i -p "Rice" -theme "$THEME" -theme-str 'window { width: 360px; } listview { lines: 18; }')
+    rofi -dmenu -i -p "Rice" -theme "$THEME" -theme-str 'window { width: 400px; } listview { lines: 18; }')
 
 case "$choice" in
     *"  Apps")            exec rofi -show drun ;;
+    *"App-Store"*)        exec "$DIR/app-store.sh" ;;
     *"  Spotify")         exec flatpak run com.spotify.Client ;;
     *"  Minecraft")       exec flatpak run com.mojang.Minecraft ;;
     *"Roblox (Sober)")    exec flatpak run org.vinegarhq.Sober ;;

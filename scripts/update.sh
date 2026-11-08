@@ -79,6 +79,7 @@ if ((HYPR_STEP)); then
     if ((SYSTEM)); then
         info "Hyprland-Pakete auf die neueste Version …"
         $SUDO emaint sync -a >>"$LOG" 2>&1 || warn "emaint sync mit Fehlern (Details im Log)"
+        if command -v eix-update >/dev/null; then $SUDO eix-update >>"$LOG" 2>&1 || true; fi
         keywords_file | write_root /etc/portage/package.accept_keywords/gentoo-rice
         $SUDO "${EMERGE_BASE[@]}" "${AUTOUNMASK_WRITE[@]/--noreplace/--update}" --newuse "${HYPR_PKGS[@]}" >>"$LOG" 2>&1 || true
         $SUDO etc-update --automode -5 /etc/portage >>"$LOG" 2>&1 || true

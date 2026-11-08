@@ -32,6 +32,7 @@ OPSEC_APPS=(
 REMOVED_APPS=( com.protonvpn.www org.prismlauncher.PrismLauncher )
 MULLVAD_PKG=net-vpn/mullvadvpn-app   # GURU (Binärpaket der offiziellen App)
 MEDIA_APPS=(
+    "io.github.kolunmi.Bazaar|Bazaar (grafischer App-Store für Flatpaks)|Apps durchstöbern und mit einem Klick installieren|1"
     "com.obsproject.Studio|OBS Studio|Bildschirm aufnehmen: Quelle 'Bildschirmaufnahme (PipeWire)'|0"
 )
 SPICE_HOME="$HOME/.spicetify"
@@ -194,6 +195,9 @@ if [[ $MODE == all ]]; then
     fi
     step "Mullvad VPN (GURU)"
     mullvad
+    # Paket-Suche für den App-Store (Super+Shift+A)
+    emerge_pkgs app-portage/eix
+    if command -v eix-update >/dev/null; then $SUDO eix-update >>"$LOG" 2>&1 || true; fi
     step "OBS Studio"
     app_list "${MEDIA_APPS[@]}"
 fi

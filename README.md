@@ -90,6 +90,7 @@ Sets `GRUB_TIMEOUT`, `GRUB_TIMEOUT_STYLE=menu` and `GRUB_DISABLE_OS_PROBER=false
 
 ```bash
 ./scripts/antivirus.sh setup         # ClamAV + signatures, freshclam/clamd services (./install.sh does this, --no-av)
+./scripts/antivirus.sh update        # install or update ClamAV + signatures (rice menu: "Virenschutz installieren/aktualisieren")
 ./scripts/antivirus.sh scan ~/Downloads   # scan a folder
 ```
 

@@ -3,6 +3,7 @@
 #   setup   ClamAV + inotify-tools installieren, Signaturen laden, Dienste (freshclam, clamd) aktivieren
 #   watch   Wächter: neue Dateien in Downloads, Minecraft- und CurseForge-Ordnern sofort prüfen,
 #           Funde in die Quarantäne verschieben (startet automatisch mit Hyprland)
+#   update  installieren, falls nötig – sonst ClamAV + Signaturen aktualisieren
 #   scan    Ordner prüfen (Standard: ~), Funde in die Quarantäne
 # Copyright (C) 2026 3rr0r303YT – GPL-3.0-or-later
 set -uo pipefail
@@ -121,9 +122,32 @@ setup() {
     print_problems
 }
 
+update() {
+    if ! command -v clamscan >/dev/null; then setup; return; fi
+    TOTAL=2 STEP_LABEL=av KW_FILE=/etc/portage/package.accept_keywords/gentoo-rice-av
+    # shellcheck source=scripts/lib.sh
+    source "$REPO/scripts/lib.sh"
+    printf '%s\n' "${B}Gentoo-rice${N} ${D}– Virenschutz aktualisieren${N}"
+    step "ClamAV-Programm"
+    if $SUDO "${EMERGE_BASE[@]}" --oneshot --update --getbinpkg --binpkg-respect-use=y --quiet-build=y \
+        app-antivirus/clamav >>"$LOG" 2>&1; then ok "ClamAV aktuell ($(clamscan --version 2>/dev/null | cut -d/ -f1))"
+    else warn "ClamAV-Update mit Fehlern – Details im Log"; fi
+    step "Virensignaturen"
+    if pgrep -x freshclam >/dev/null; then $SUDO rc-service freshclam stop >>"$LOG" 2>&1 || true; fi
+    if $SUDO freshclam; then ok "Signaturen aktuell"; else warn "freshclam mit Fehlern (Netz?)"; fi
+    local s
+    for s in freshclam clamd; do
+        if [[ -x /etc/init.d/$s ]]; then $SUDO rc-service "$s" restart >>"$LOG" 2>&1 || $SUDO rc-service "$s" start >>"$LOG" 2>&1 || true; fi
+    done
+    pgrep -f "antivirus.sh watch" >/dev/null || ( setsid "$REPO/scripts/antivirus.sh" watch >/dev/null 2>&1 & )
+    ok "Wächter läuft"
+    print_problems
+}
+
 case ${1:-} in
-    setup) setup ;;
+    setup)  setup ;;
+    update) update ;;
     watch) watch ;;
     scan)  scan "${2:-$HOME}" ;;
-    *) printf 'Nutzung: %s setup|watch|scan [ordner]\n' "$0" >&2; exit 1 ;;
+    *) printf 'Nutzung: %s setup|update|watch|scan [ordner]\n' "$0" >&2; exit 1 ;;
 esac

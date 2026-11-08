@@ -89,7 +89,7 @@ x11-terms/kitty wayland
 x11-misc/rofi wayland
 media-gfx/imagemagick png jpeg webp
 media-sound/cava pulseaudio pipewire
-media-video/mpv libmpv wayland vaapi pipewire lua
+media-video/mpv libmpv wayland vaapi pipewire lua -xv
 media-video/ffmpeg x264 vpx webp zlib vaapi opus
 media-libs/libsdl2 wayland
 games-util/mangohud wayland
@@ -109,6 +109,9 @@ dry_run() {
     printf '%s\n' "${B}Gentoo-rice – Dry-Run${N} ${D}(keine Änderungen, kein sudo)${N}"
 
     step "Repositories"
+    r=$(eselect profile show 2>/dev/null | sed -n '2{s/^[[:space:]]*//;p}')
+    if [[ $r == */desktop* && $r != *systemd* ]]; then ok "Profil: $r"
+    else warn "Profil: ${r:-unbekannt} → würde auf default/linux/amd64/23.0/desktop umstellen (Binärpakete passen sonst nicht)"; fi
     for r in guru hyproverlay; do
         if repo_enabled "$r" && repo_synced "$r"; then ok "$r aktiv ($(repo_path "$r"))"
         elif repo_enabled "$r"; then warn "$r aktiv, aber nicht synchronisiert → emaint sync -r $r"
@@ -179,6 +182,29 @@ dry_run() {
 if [[ $DRY_RUN -eq 1 ]]; then dry_run; exit 0; fi
 
 printf '%s\n' "${B}Gentoo-rice${N} ${D}– Hyprland Setup für $USER_NAME · Log: $LOG${N}"
+
+# ── 0. Profil ──────────────────────────────────────────────
+# Die Gentoo-Binärpakete sind für das desktop-Profil gebaut. Mit dem Basis-Profil
+# (ohne wayland/opengl/vulkan/dbus) passen sie nicht und fast alles wird kompiliert.
+PROFILE=$(eselect profile show 2>/dev/null | sed -n '2{s/^[[:space:]]*//;p}')
+if [[ $PROFILE == *systemd* ]]; then
+    warn "Profil $PROFILE nutzt systemd – das Rice ist für OpenRC gebaut"
+elif [[ $PROFILE != */desktop* ]]; then
+    warn "Profil: ${PROFILE:-unbekannt} – empfohlen: default/linux/amd64/23.0/desktop (passt zu den Binärpaketen)"
+    answer=j
+    if [[ -t 0 ]]; then read -r -p "  Jetzt auf das desktop-Profil umstellen? [J/n] " answer || answer=j; fi
+    if [[ ${answer:-j} =~ ^[jJyY]$ ]]; then
+        target=$(eselect profile list 2>/dev/null | grep -oE 'default/linux/amd64/[0-9.]+/desktop( |$)' | head -n1 | tr -d ' ')
+        if [[ -n $target ]] && $SUDO eselect profile set "$target"; then
+            ok "Profil: $target"
+            info "System an das neue Profil anpassen (emerge -uDN @world, meist Binärpakete) …"
+            $SUDO "${EMERGE_BASE[@]}" "${EMERGE_OPTS[@]/--noreplace/--update}" --deep --newuse @world ||
+                { warn "@world-Update mit Fehlern – Details im Log"; FAILED+=("@world nach Profilwechsel"); }
+        else
+            warn "Profil konnte nicht umgestellt werden – weiter mit ${PROFILE:-dem aktuellen Profil}"
+        fi
+    fi
+fi
 
 # ── 1. Grundwerkzeuge ──────────────────────────────────────
 step "Grundwerkzeuge (git, eselect-repository)"

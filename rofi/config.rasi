@@ -13,6 +13,11 @@ configuration {
     me-select-entry: "MouseSecondary";
     me-accept-entry: "MousePrimary";
     scroll-method: 1;
+    /* Suchen: Treffer am Wortanfang zuerst ("c" → CurseForge, Claude …) */
+    matching: "normal";
+    sort: true;
+    sorting-method: "fzf";
+    case-sensitive: false;
 }
 
 @import "~/.cache/wal/colors-rice.rasi"

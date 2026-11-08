@@ -1,5 +1,6 @@
-/* Gentoo-rice – kleines Menü (Power) */
+/* Gentoo-rice – kleine Menüs (Rice-Menü, Power, App-Store) – mit Suchfeld */
 @import "config.rasi"
 window { width: 280px; }
 listview { lines: 5; }
-inputbar { children: [ "prompt" ]; }
+inputbar { children: [ "prompt", "entry" ]; }
+entry { placeholder: "Tippen zum Suchen…"; }

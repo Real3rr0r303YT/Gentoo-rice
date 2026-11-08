@@ -70,6 +70,9 @@ for prof in "$HOME/.bash_profile" "$HOME/.zprofile"; do
         sed -i "/$PROFILE_BEGIN/,/$PROFILE_END/d" "$prof"; ok "${prof/#$HOME/\~}"
     fi
 done
+if compgen -G "$HOME/.local/share/applications/gentoo-rice-*.desktop" >/dev/null; then
+    rm -f "$HOME"/.local/share/applications/gentoo-rice-*.desktop; ok "Launcher-Einträge entfernt"
+fi
 if [[ -f $HOME/.bashrc ]] && grep -qF "# >>> gentoo-rice prompt >>>" "$HOME/.bashrc"; then
     sed -i "/# >>> gentoo-rice prompt >>>/,/# <<< gentoo-rice prompt <<</d" "$HOME/.bashrc"; ok "Prompt aus ~/.bashrc"
 fi

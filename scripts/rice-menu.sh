@@ -47,6 +47,8 @@ choice=$(printf '%s\n' \
     "󰄜  Handy verbinden (KDE Connect)" \
     "󰪺  CurseForge" \
     "󰖂  Mullvad VPN" \
+    "󰇮  Proton Mail" \
+    "󰃭  Proton Calendar" \
     "󰒃  Tor Browser" \
     "󰕥  Virenschutz installieren/aktualisieren" \
     "󰕥  Virenscan (Home)" \
@@ -62,7 +64,7 @@ choice=$(printf '%s\n' \
     "󰣧  Gentoo aktualisieren (emerge @world)" \
     "󰌌  Tastenkürzel" \
     "󰐥  Power-Menü" |
-    rofi -dmenu -i -p "Rice" -theme "$THEME" -theme-str 'window { width: 400px; } listview { lines: 18; }')
+    rofi -dmenu -i -p "Rice" -theme "$THEME" -theme-str 'window { width: 420px; } listview { lines: 20; }')
 
 case "$choice" in
     *"  Apps")            exec rofi -show drun ;;
@@ -80,6 +82,8 @@ case "$choice" in
     *"Quarantäne öffnen") mkdir -p "$HOME/.local/share/gentoo-rice/quarantine"; exec thunar "$HOME/.local/share/gentoo-rice/quarantine" ;;
     *"  CurseForge")      exec flatpak run com.overwolf.curseforge ;;
     *"  Mullvad VPN")     exec "$DIR/mullvad.sh" open ;;
+    *"  Proton Mail")     exec "$DIR/webapp.sh" https://mail.proton.me ;;
+    *"  Proton Calendar") exec "$DIR/webapp.sh" https://calendar.proton.me ;;
     *"  Tor Browser")
         if flatpak info --user org.torproject.torbrowser-launcher >/dev/null 2>&1; then exec flatpak run org.torproject.torbrowser-launcher
         else exec flatpak run com.github.micahflee.torbrowser-launcher; fi ;;

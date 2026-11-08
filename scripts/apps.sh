@@ -5,13 +5,14 @@
 # Copyright (C) 2026 3rr0r303YT – GPL-3.0-or-later
 #
 # Nutzung: ./scripts/apps.sh               alles installieren/aktualisieren
+#          ./scripts/apps.sh update        alle Apps (Flatpaks) aktualisieren, danach Spicetify neu anwenden
 #          ./scripts/apps.sh spicetify     Spicetify neu anwenden (z. B. nach einem Spotify-Update)
 #          ./scripts/apps.sh sync          nur Farben übernehmen (ruft wallpaper.sh/theme.sh auf)
 set -Eeuo pipefail
 
 REPO="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/.." && pwd)"
 MODE=${1:-all}
-case $MODE in all|spicetify|sync) ;; -h|--help) sed -n '2,9p' "$0"; exit 0 ;; *) echo "Unbekannt: $MODE" >&2; exit 1 ;; esac
+case $MODE in all|update|spicetify|sync) ;; -h|--help) sed -n '2,10p' "$0"; exit 0 ;; *) echo "Unbekannt: $MODE" >&2; exit 1 ;; esac
 
 SPOTIFY_ID=com.spotify.Client
 # weitere Apps: "<Flatpak-ID[,Alternative]>|<Name>|<Hinweis>|<optional: 1 = fehlt auf Flathub ist ok>"
@@ -49,6 +50,7 @@ fi
 
 TOTAL=1 STEP_LABEL=apps KW_FILE=/etc/portage/package.accept_keywords/gentoo-rice-apps
 if [[ $MODE == all ]]; then TOTAL=6
+elif [[ $MODE == update ]]; then TOTAL=2; export GENTOO_RICE_SUDO_LOOP=1
 else export GENTOO_RICE_SUDO_LOOP=1; fi   # sudo nur für Mullvad (emerge)
 # shellcheck source=scripts/lib.sh
 source "$REPO/scripts/lib.sh"
@@ -182,6 +184,13 @@ if [[ $MODE == all ]]; then
     mullvad
     step "OBS Studio"
     app_list "${MEDIA_APPS[@]}"
+fi
+
+if [[ $MODE == update ]]; then
+    step "Apps aktualisieren (Flatpak)"
+    if flatpak update --user -y --noninteractive; then ok "alle Apps aktuell"
+    else warn "flatpak update mit Fehlern"; FAILED+=("flatpak update"); fi
+    flatpak uninstall --user -y --unused --noninteractive >>"$LOG" 2>&1 || true
 fi
 
 step "Spicetify"

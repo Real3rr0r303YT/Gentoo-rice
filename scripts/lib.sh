@@ -199,6 +199,11 @@ bashrc_block() { # bashrc_block <name> <inhalt>  – Block mit Markern in ~/.bas
     printf '%s\n%s\n%s\n' "$begin" "$2" "$end" >> "$f"
 }
 
+# Kurzer Prompt: nur Benutzername + Ordner (ohne den langen Rechnernamen)
+rice_prompt() {
+    bashrc_block prompt "PS1='\[\e[1;32m\]\u\[\e[0m\] \[\e[1;34m\]\w\[\e[0m\] \\\$ '"
+}
+
 print_problems() { # Übersprungene und fehlgeschlagene Pakete auflisten
     local s
     if ((${#SKIPPED[@]})); then

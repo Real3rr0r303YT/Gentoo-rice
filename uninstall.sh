@@ -70,6 +70,9 @@ for prof in "$HOME/.bash_profile" "$HOME/.zprofile"; do
         sed -i "/$PROFILE_BEGIN/,/$PROFILE_END/d" "$prof"; ok "${prof/#$HOME/\~}"
     fi
 done
+if [[ -f $HOME/.bashrc ]] && grep -qF "# >>> gentoo-rice prompt >>>" "$HOME/.bashrc"; then
+    sed -i "/# >>> gentoo-rice prompt >>>/,/# <<< gentoo-rice prompt <<</d" "$HOME/.bashrc"; ok "Prompt aus ~/.bashrc"
+fi
 if [[ -f $HOME/.bashrc ]] && grep -qF "$FASTFETCH_BEGIN" "$HOME/.bashrc"; then
     sed -i "/$FASTFETCH_BEGIN/,/$FASTFETCH_END/d" "$HOME/.bashrc"; ok "fastfetch-Autostart aus ~/.bashrc"
 fi

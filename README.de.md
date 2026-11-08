@@ -89,6 +89,7 @@ Setzt `GRUB_TIMEOUT`, `GRUB_TIMEOUT_STYLE=menu` und `GRUB_DISABLE_OS_PROBER=fals
 
 ```bash
 ./scripts/apps.sh             # Spotify + Spicetify, Minecraft Java, CurseForge, Sober (Roblox), Mullvad VPN (GURU), Proton Pass/Mail/Calendar/Authenticator, Tor Browser, Signal, OBS Studio – alles Flatpak
+./scripts/apps.sh update      # alle Apps aktualisieren (auch im Rice-Menü: „Apps aktualisieren“)
 ./scripts/apps.sh spicetify   # Spicetify nach einem Spotify-Update neu anwenden (macht update.sh --system automatisch)
 ```
 

@@ -112,6 +112,7 @@ for entry in "${CACHE_LINKS[@]}"; do
     [[ -e $dst || -L $dst ]] || { mkdir -p "$(dirname "$dst")"; ln -s "$HOME/${entry%%|*}" "$dst"; }
 done
 "$REPO/scripts/hypr-version.sh" || true
+rice_prompt
 ((missing)) || ok "alle Links in Ordnung"
 
 # ── 3. Farben, Login-Screen, Zeiger ───────────────────────

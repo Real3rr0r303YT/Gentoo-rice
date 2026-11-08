@@ -38,6 +38,8 @@ git clone https://github.com/Real3rr0r303YT/Gentoo-rice && cd Gentoo-rice && ./i
 ```sh
 ./install.sh --dry-run   # only show what would be installed/changed (no sudo, no changes)
 ./install.sh --no-claude # without Claude Code
+./install.sh --no-apps   # without Spotify/Spicetify and Minecraft
+./install.sh --no-grub   # leave GRUB untouched
 ./install.sh --login     # with graphical login screen (SDDM)
 ```
 
@@ -74,12 +76,22 @@ Only three self-generated gradient placeholders ship with the repo – no third-
 ### GRUB boot menu
 
 ```sh
-./scripts/grub-setup.sh               # menu visible for 5 s, Windows entry via os-prober
+./scripts/grub-setup.sh               # blue theme, menu visible for 5 s, Windows entry via os-prober
+./scripts/grub-setup.sh --no-theme    # without the theme
 ./scripts/grub-setup.sh --timeout 10  # different timeout
 ./scripts/grub-setup.sh --restore     # restore the original /etc/default/grub
 ```
 
-Sets `GRUB_TIMEOUT`, `GRUB_TIMEOUT_STYLE=menu` and `GRUB_DISABLE_OS_PROBER=false`, backs up `/etc/default/grub` first and regenerates `/boot/grub/grub.cfg`. Also via `./install.sh --grub`.
+Sets `GRUB_TIMEOUT`, `GRUB_TIMEOUT_STYLE=menu` and `GRUB_DISABLE_OS_PROBER=false`, backs up `/etc/default/grub` first and regenerates `/boot/grub/grub.cfg`. The theme (blurred wallpaper, blue menu, JetBrains Mono via `grub-mkfont`) goes to `/boot/grub/themes/gentoo-rice`. `./install.sh` runs this automatically when GRUB is installed.
+
+### Apps: Spotify + Spicetify, Minecraft Java
+
+```bash
+./scripts/apps.sh             # Spotify (Flatpak) + Spicetify, Prism Launcher (Minecraft Java)
+./scripts/apps.sh spicetify   # re-apply Spicetify after a Spotify update (update.sh --system does this)
+```
+
+Spicetify uses the theme `GentooRice` with the current rice colors (updated on every wallpaper/theme change). `Super + S` opens Spotify; Minecraft: Prism Launcher → add Microsoft account → create instance.
 
 ### Uninstall
 
@@ -250,10 +262,11 @@ A summary of installed versions is printed at the end.
 | `Super + Space` | Launcher (rofi) |
 | `Super + W` | Wallpaper picker (images, videos, Wallpaper Engine) |
 | `Super + Shift + W` | Random wallpaper |
-| `Super + D` | Rice menu (theme, wallpaper, login screen, update, keybindings) |
+| `Super + D` | Rice menu (apps, Spotify, Minecraft, theme, wallpaper, login screen, update, keybindings) |
 | `Super + Shift + T` | Theme switcher |
 | `Super + B` | Firefox |
 | `Super + G` | Steam |
+| `Super + S` | Spotify |
 | `Super + E` | File manager |
 | `Super + A` | cava (audio visualizer) |
 | `Super + T` | btop |

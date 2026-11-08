@@ -46,6 +46,7 @@ local menu     = "pkill rofi || rofi -show drun"
 local files    = "thunar"
 local browser  = "firefox-bin"
 local steam    = "flatpak run com.valvesoftware.Steam"
+local spotify  = "flatpak run com.spotify.Client"
 
 ---------------------
 ---- MONITORE -------
@@ -65,6 +66,8 @@ hl.monitor({
 hl.env("XDG_CURRENT_DESKTOP", "Hyprland")
 hl.env("XDG_SESSION_TYPE", "wayland")
 hl.env("XDG_SESSION_DESKTOP", "Hyprland")
+-- Flatpak-Apps (Steam, Spotify, Minecraft …) im Launcher anzeigen
+hl.env("XDG_DATA_DIRS", home .. "/.local/share/flatpak/exports/share:/var/lib/flatpak/exports/share:/usr/local/share:/usr/share")
 hl.env("XCURSOR_THEME", look.cursor)
 hl.env("XCURSOR_SIZE", tostring(look.cursor_size))
 hl.env("HYPRCURSOR_THEME", look.cursor)
@@ -79,7 +82,7 @@ hl.env("ELECTRON_OZONE_PLATFORM_HINT", "auto")
 ---------------------
 
 hl.on("hyprland.start", function()
-    hl.exec_cmd("dbus-update-activation-environment WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE HYPRLAND_INSTANCE_SIGNATURE")
+    hl.exec_cmd("dbus-update-activation-environment WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE XDG_DATA_DIRS HYPRLAND_INSTANCE_SIGNATURE")
     hl.exec_cmd("gentoo-pipewire-launcher restart")
     hl.exec_cmd(scripts .. "/cursor.sh " .. look.cursor .. " " .. look.cursor_size)
     hl.exec_cmd(scripts .. "/wallpaper.sh restore")
@@ -275,6 +278,7 @@ hl.bind(mod .. " + Space",       exec(menu))
 hl.bind(mod .. " + E",           exec(files))
 hl.bind(mod .. " + B",           exec(browser))
 hl.bind(mod .. " + G",           exec(steam))
+hl.bind(mod .. " + S",           exec(spotify))
 hl.bind(mod .. " + W",           exec(scripts .. "/wallpaper-picker.sh"))
 hl.bind(mod .. " + SHIFT + W",   exec(scripts .. "/wallpaper.sh random"))
 hl.bind(mod .. " + SHIFT + T",   exec(scripts .. "/theme-picker.sh"))

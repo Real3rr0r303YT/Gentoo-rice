@@ -83,6 +83,8 @@ gen_colors() { # gen_colors [--quiet-terminals]
     _gen_colors "$@"
     # Login-Screen (SDDM) + hyprlock-Avatar im Hintergrund angleichen
     ("$REPO/scripts/sddm-sync.sh" >/dev/null 2>&1 &)
+    # Spotify (Spicetify) in den neuen Farben
+    ("$REPO/scripts/apps.sh" sync >/dev/null 2>&1 &)
     return 0
 }
 

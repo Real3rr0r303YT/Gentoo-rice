@@ -6,7 +6,9 @@ set -Eeuo pipefail
 
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-DEV=0 WE=0 DRY_RUN=0 CLAUDE=1 LOGIN=0 LOGIN_THEME=gentoo-rice GRUB=0
+DEV=0 WE=0 DRY_RUN=0 CLAUDE=1 LOGIN=0 LOGIN_THEME=gentoo-rice GRUB=0 APPS=1
+# GRUB (blaues Theme, 5 s Menü) standardmäßig, wenn GRUB der Bootloader ist
+if [[ -f /etc/default/grub ]]; then GRUB=1; fi
 for arg in "$@"; do
     case $arg in
         --dev)     DEV=1 ;;
@@ -16,12 +18,15 @@ for arg in "$@"; do
         --login|--login=default|--login=gentoo-rice) LOGIN=1 LOGIN_THEME=gentoo-rice ;;
         --login=minecraft|--login=blocks) LOGIN=1 LOGIN_THEME=gentoo-rice-blocks ;;
         --grub)    GRUB=1 ;;
+        --no-grub) GRUB=0 ;;
+        --no-apps) APPS=0 ;;
         -h|--help)
-            printf 'Nutzung: ./install.sh [--dev] [--we] [--login[=minecraft]] [--grub] [--no-claude] [--dry-run]\n'
+            printf 'Nutzung: ./install.sh [--dev] [--we] [--login[=minecraft]] [--no-grub] [--no-apps] [--no-claude] [--dry-run]\n'
             printf '  --dev      zusätzlich Entwickler-Setup (scripts/dev-setup.sh)\n'
             printf '  --we       zusätzlich Wallpaper Engine (scripts/wallpaperengine.sh)\n'
             printf '  --login    grafischer Login-Screen (SDDM, Wayland); --login=minecraft für den Klötzchen-Look\n'
-            printf '  --grub     GRUB-Menü 5 s sichtbar + Windows-Eintrag (scripts/grub-setup.sh)\n'
+            printf '  --no-grub  GRUB nicht anfassen (Standard: blaues Theme, Menü 5 s, Windows-Eintrag)\n'
+            printf '  --no-apps  ohne Spotify + Spicetify und Minecraft Java (Prism Launcher)\n'
             printf '  --no-claude  Claude Code nicht installieren\n'
             printf '  --dry-run  nur anzeigen, was installiert/geändert würde (keine Änderungen)\n'
             exit 0 ;;
@@ -29,7 +34,7 @@ for arg in "$@"; do
     esac
 done
 
-TOTAL=$((14 + CLAUDE + LOGIN + GRUB + DEV + WE))
+TOTAL=$((14 + CLAUDE + APPS + LOGIN + GRUB + DEV + WE))
 KW_FILE=/etc/portage/package.accept_keywords/gentoo-rice-auto
 # shellcheck source=scripts/links.sh
 source "$REPO/scripts/links.sh"
@@ -548,6 +553,14 @@ else
 fi
 DONE+=("gamemode, mangohud, Flatpak + Flathub, Steam, Proton-GE, ProtonUp-Qt, Bottles")
 
+# ── Apps: Spotify + Spicetify, Minecraft Java ──────────────
+if [[ $APPS -eq 1 ]]; then
+    step "Apps: Spotify + Spicetify, Minecraft Java"
+    if [[ $DRY_RUN -eq 1 ]]; then info "würde ausführen: ./scripts/apps.sh"
+    elif "$REPO/scripts/apps.sh"; then DONE+=("Spotify + Spicetify (Rice-Farben), Minecraft Java (Prism Launcher)")
+    else warn "Apps unvollständig"; FAILED+=("Apps (einzeln: ./scripts/apps.sh)"); fi
+fi
+
 # ── Claude Code ────────────────────────────────────────────
 if [[ $CLAUDE -eq 1 ]]; then
     step "Claude Code (nativer Installer)"
@@ -576,10 +589,11 @@ if [[ $LOGIN -eq 1 ]]; then
     fi
 fi
 
-# ── GRUB (optional) ────────────────────────────────────────
+# ── GRUB ───────────────────────────────────────────────────
 if [[ $GRUB -eq 1 ]]; then
-    step "GRUB-Bootmenü (5 s, Windows-Eintrag)"
-    if "$REPO/scripts/grub-setup.sh" --timeout 5; then DONE+=("GRUB: Menü 5 s sichtbar, Windows über os-prober")
+    step "GRUB-Bootmenü (blaues Theme, 5 s, Windows-Eintrag)"
+    if [[ $DRY_RUN -eq 1 ]]; then info "würde ausführen: ./scripts/grub-setup.sh --timeout 5"
+    elif "$REPO/scripts/grub-setup.sh" --timeout 5; then DONE+=("GRUB: blaues Theme, Menü 5 s sichtbar, Windows über os-prober")
     else warn "GRUB-Einrichtung fehlgeschlagen"; FAILED+=("GRUB (einzeln: ./scripts/grub-setup.sh)"); fi
 fi
 

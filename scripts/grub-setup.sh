@@ -1,18 +1,19 @@
 #!/usr/bin/env bash
-# Gentoo-rice – GRUB-Bootmenü: sichtbares Menü mit Auswahlzeit + Windows-Eintrag (os-prober)
+# Gentoo-rice – GRUB-Bootmenü: blaues Theme, sichtbares Menü mit Auswahlzeit + Windows-Eintrag (os-prober)
 # Copyright (C) 2026 3rr0r303YT – GPL-3.0-or-later
 #
-# Nutzung: ./scripts/grub-setup.sh [--timeout SEKUNDEN]   (Standard: 5)
+# Nutzung: ./scripts/grub-setup.sh [--timeout SEKUNDEN] [--no-theme]   (Standard: 5 s, mit Theme)
 #          ./scripts/grub-setup.sh --restore               (Original von /etc/default/grub zurück)
 set -Eeuo pipefail
 
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-TIMEOUT=5 RESTORE=0
+TIMEOUT=5 RESTORE=0 THEME=1
 while (($#)); do
     case $1 in
         --timeout) TIMEOUT=${2:-}; shift ;;
         --timeout=*) TIMEOUT=${1#*=} ;;
         --restore) RESTORE=1 ;;
+        --no-theme) THEME=0 ;;
         -h|--help) sed -n '2,7p' "$0"; exit 0 ;;
         *) printf 'Unbekannte Option: %s\n' "$1" >&2; exit 1 ;;
     esac
@@ -20,12 +21,14 @@ while (($#)); do
 done
 [[ $TIMEOUT =~ ^[0-9]+$ ]] || { echo "--timeout braucht eine Zahl (Sekunden)" >&2; exit 1; }
 
-TOTAL=4 STEP_LABEL=grub
+TOTAL=$((4 + THEME)) STEP_LABEL=grub
 # shellcheck source=scripts/lib.sh
 source "$REPO/scripts/lib.sh"
 
 CFG=/etc/default/grub
 ORIG=/etc/default/grub.gentoo-rice.orig
+THEME_SRC=$REPO/grub/gentoo-rice
+THEME_DIR=""
 
 # Ausgabedatei von grub-mkconfig finden (Gentoo: /boot/grub/grub.cfg)
 grub_cfg() {
@@ -52,6 +55,77 @@ mkconfig() {
     if $SUDO grep -qiE "menuentry ['\"]?Windows" "$out"; then ok "Windows-Eintrag im Bootmenü"
     else info "Kein Windows gefunden (normal, wenn nur Gentoo installiert ist)"; fi
     ok "Bootmenü geschrieben: $out"
+}
+
+# slice9 <farbe> <präfix> <radius> <ordner> – abgerundete Box als 9 Einzelbilder (GRUB-Pixmap-Stil)
+slice9() {
+    local c=$1 p=$2 r=$3 d=$4 x y i=0 size
+    local names=(nw n ne w c e sw s se)
+    size=$((r * 3))
+    magick -size "${size}x${size}" xc:none -fill "$c" \
+        -draw "roundrectangle 0,0 $((size - 1)),$((size - 1)) $r,$r" "PNG32:$d/$p-full.png"
+    for y in 0 1 2; do
+        for x in 0 1 2; do
+            magick "$d/$p-full.png" -crop "${r}x${r}+$((x * r))+$((y * r))" +repage "PNG32:$d/${p}_${names[i]}.png"
+            i=$((i + 1))
+        done
+    done
+    rm -f "$d/$p-full.png"
+}
+
+# grub-mkfont (USE=truetype) für eigene Schriften im Theme
+ensure_mkfont() {
+    command -v grub-mkfont >/dev/null && return 0
+    info "grub-mkfont fehlt → sys-boot/grub mit USE=truetype neu bauen"
+    as_dir package.use
+    add_line_root /etc/portage/package.use/gentoo-rice-grub "sys-boot/grub fonts truetype"
+    $SUDO "${EMERGE_BASE[@]}" --oneshot --newuse --getbinpkg --binpkg-respect-use=y --quiet-build=y sys-boot/grub >>"$LOG" 2>&1 || true
+    command -v grub-mkfont >/dev/null
+}
+
+install_theme() {
+    local cfg tmp bg="" f fr fb sz bold=()
+    cfg=$(grub_cfg) || { warn "Kein GRUB-Verzeichnis (/boot gemountet?) – Theme übersprungen"; return 1; }
+    command -v magick >/dev/null || { warn "ImageMagick (magick) fehlt – Theme übersprungen"; return 1; }
+    THEME_DIR="$(dirname "$cfg")/themes/gentoo-rice"
+    tmp=$(mktemp -d)
+    cp "$THEME_SRC/theme.txt" "$tmp/"
+
+    # Hintergrund: Wallpaper weichgezeichnet + blauer Verlauf (sonst nur Verlauf)
+    for f in /var/lib/gentoo-rice/sddm/background.jpg "$HOME/.cache/rice/current.png"; do
+        if [[ -s $f ]]; then bg=$f; break; fi
+    done
+    if [[ -n $bg ]] && magick "$bg" -resize 1920x1080^ -gravity center -extent 1920x1080 \
+        -resize 25% -blur 0x8 -resize 400% \
+        \( -size 1920x1080 gradient:"rgba(18,51,128,0.72)-rgba(4,9,26,0.94)" \) -composite \
+        -alpha off "PNG24:$tmp/background.png" 2>>"$LOG"; then
+        ok "Hintergrund aus dem Wallpaper"
+    else
+        magick -size 1920x1080 gradient:"#123380-#040a1a" "PNG24:$tmp/background.png"
+        ok "Hintergrund: blauer Verlauf"
+    fi
+    slice9 "rgba(15,23,42,0.72)" menu 18 "$tmp"
+    slice9 "#3b82f6" select 12 "$tmp"
+
+    # Schriften (JetBrains Mono → GRUB-pf2), Namen: "Rice Regular <n>" / "Rice Bold <n>"
+    if ensure_mkfont; then
+        fr=$(fc-match -f '%{file}' 'JetBrains Mono:style=Regular' 2>/dev/null || true)
+        fb=$(fc-match -f '%{file}' 'JetBrains Mono:style=Bold' 2>/dev/null || true)
+        if [[ ! ${fb,,} =~ bold ]]; then fb=$fr; bold=(-b); fi
+        if [[ -n $fr ]]; then
+            for sz in 14 16 18; do grub-mkfont -n Rice -s "$sz" -o "$tmp/rice-$sz.pf2" "$fr" >>"$LOG" 2>&1 || true; done
+            for sz in 16 18 32; do grub-mkfont -n Rice "${bold[@]}" -s "$sz" -o "$tmp/rice-bold-$sz.pf2" "$fb" >>"$LOG" 2>&1 || true; done
+        fi
+    fi
+    if [[ -f $tmp/rice-16.pf2 ]]; then ok "Schrift: $(basename "$fr")"
+    else warn "Keine eigene Schrift (grub-mkfont) – GRUB nimmt seine Standardschrift"; fi
+
+    $SUDO rm -rf "$THEME_DIR"
+    $SUDO mkdir -p "$THEME_DIR"
+    $SUDO cp -a "$tmp"/. "$THEME_DIR"/
+    $SUDO chmod -R a+rX "$THEME_DIR"
+    rm -rf "$tmp"
+    ok "Theme installiert: $THEME_DIR"
 }
 
 [[ -f $CFG ]] || die "$CFG fehlt – GRUB (sys-boot/grub) ist nicht installiert oder nicht der Bootloader."
@@ -83,7 +157,13 @@ step "os-prober für den Windows-Eintrag"
 emerge_pkgs sys-boot/os-prober
 if command -v os-prober >/dev/null; then ok "os-prober vorhanden"; else warn "os-prober fehlt – Windows erscheint evtl. nicht im Menü"; fi
 
-# ── 3. /etc/default/grub anpassen ─────────────────────────
+# ── 3. Theme ──────────────────────────────────────────────
+if ((THEME)); then
+    step "Blaues GRUB-Theme"
+    install_theme || THEME_DIR=""
+fi
+
+# ── 4. /etc/default/grub anpassen ─────────────────────────
 step "Einstellungen"
 set_kv() { # set_kv <SCHLÜSSEL> <WERT> – vorhandene (auch auskommentierte) Zeile ersetzen, sonst anhängen
     local k=$1 v=$2
@@ -97,14 +177,25 @@ set_kv() { # set_kv <SCHLÜSSEL> <WERT> – vorhandene (auch auskommentierte) Ze
 set_kv GRUB_TIMEOUT "$TIMEOUT"
 set_kv GRUB_TIMEOUT_STYLE menu
 set_kv GRUB_DISABLE_OS_PROBER false
+KEYS=(GRUB_TIMEOUT GRUB_TIMEOUT_STYLE GRUB_DISABLE_OS_PROBER)
+if [[ -n $THEME_DIR ]]; then
+    # GRUB_TERMINAL=console würde das Theme abschalten
+    $SUDO sed -i -E 's|^GRUB_TERMINAL=|#GRUB_TERMINAL=|' "$CFG"
+    set_kv GRUB_TERMINAL_OUTPUT gfxterm
+    set_kv GRUB_GFXMODE auto
+    set_kv GRUB_GFXPAYLOAD_LINUX keep
+    set_kv GRUB_THEME "$THEME_DIR/theme.txt"
+    KEYS+=(GRUB_TERMINAL_OUTPUT GRUB_GFXMODE GRUB_GFXPAYLOAD_LINUX GRUB_THEME)
+    if $SUDO test -f "$THEME_DIR/rice-16.pf2"; then set_kv GRUB_FONT "$THEME_DIR/rice-16.pf2"; KEYS+=(GRUB_FONT); fi
+fi
 # Nur eine Zeile pro Schlüssel behalten (falls doppelt vorhanden)
-for k in GRUB_TIMEOUT GRUB_TIMEOUT_STYLE GRUB_DISABLE_OS_PROBER; do
+for k in "${KEYS[@]}"; do
     n=$($SUDO grep -cE "^$k=" "$CFG" || true)
     if ((n > 1)); then $SUDO sed -i -E "0,/^$k=/! { /^$k=/d }" "$CFG"; fi
 done
 ok "$CFG angepasst"
 
-# ── 4. Bootmenü erzeugen ──────────────────────────────────
+# ── 5. Bootmenü erzeugen ──────────────────────────────────
 step "Bootmenü neu erzeugen"
 mkconfig
 

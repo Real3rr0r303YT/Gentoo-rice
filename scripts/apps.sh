@@ -74,22 +74,6 @@ flatpak_app() { # flatpak_app <id[,alternative…]> <name> [optional]
     warn "$2 konnte nicht installiert werden (Details im Log)"; FAILED+=("${ids[0]} (Flatpak)"); return 1
 }
 
-# Web-App als Starter (für Dienste ohne Linux-Flatpak), erscheint in rofi
-web_app() { # web_app <id> <name> <url> <icon>
-    local f="$HOME/.local/share/applications/$1.desktop"
-    mkdir -p "$(dirname "$f")"
-    cat > "$f" <<DESK
-[Desktop Entry]
-Type=Application
-Name=$2
-Comment=$2 (Web-App, Gentoo-rice)
-Exec=$HOME/.local/share/gentoo-rice/scripts/webapp.sh $3
-Icon=$4
-Categories=Office;Network;
-DESK
-    ok "$2 als Web-App im Launcher ($3)"
-}
-
 mullvad() {
     ensure_repo guru >/dev/null 2>&1 || true
     as_dir package.accept_keywords
@@ -186,8 +170,8 @@ if [[ $MODE == all ]]; then
         fi
     done
     app_list "${OPSEC_APPS[@]}"
-    web_app proton-calendar "Proton Calendar" https://calendar.proton.me x-office-calendar
-    web_app proton-mail "Proton Mail" https://mail.proton.me mail-client
+    "$REPO/scripts/launchers.sh"
+    ok "Proton Mail / Calendar / Pass als Web-App im Launcher"
     step "Mullvad VPN (GURU)"
     mullvad
     # Paket-Suche für den App-Store (Super+Shift+A)

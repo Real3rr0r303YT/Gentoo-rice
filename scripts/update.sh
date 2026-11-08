@@ -113,6 +113,7 @@ for entry in "${CACHE_LINKS[@]}"; do
     [[ -e $dst || -L $dst ]] || { mkdir -p "$(dirname "$dst")"; ln -s "$HOME/${entry%%|*}" "$dst"; }
 done
 "$REPO/scripts/hypr-version.sh" || true
+"$REPO/scripts/launchers.sh"
 rice_prompt
 ((missing)) || ok "alle Links in Ordnung"
 

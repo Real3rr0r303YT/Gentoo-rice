@@ -177,10 +177,17 @@ printf '\n%sUpdate fertig.%s Log: %s\n' "$G$B" "$N" "$LOG"
 
 # ── Zurück zum Login-Screen (SDDM), damit alles frisch geladen wird ──
 if ((RELOGIN)) && pgrep -x sddm >/dev/null; then
-    printf '\n%sLogin-Screen startet in 5 s neu%s – offene Programme werden geschlossen. Abbrechen: Strg+C\n' "$Y$B" "$N"
-    for i in 5 4 3 2 1; do printf '  %s …\r' "$i"; sleep 1; done
-    printf '\n'
-    $SUDO rc-service display-manager restart
+    # sudo vorher abfragen – danach läuft der Neustart losgelöst von dieser Sitzung
+    # (sonst beendet das Stoppen von SDDM auch dieses Terminal, bevor SDDM wieder startet)
+    if $SUDO -v; then
+        printf '\n%sLogin-Screen startet in 5 s neu%s – offene Programme werden geschlossen. Abbrechen: Strg+C\n' "$Y$B" "$N"
+        for i in 5 4 3 2 1; do printf '  %s …\r' "$i"; sleep 1; done
+        printf '\n'
+        $SUDO setsid -f sh -c 'sleep 1; rc-service display-manager stop; sleep 2; rc-service display-manager start' \
+            </dev/null >/var/tmp/gentoo-rice-relogin.log 2>&1 || $SUDO rc-service display-manager restart
+    else
+        warn "sudo abgelehnt – Login-Screen nicht neu gestartet (später: sudo rc-service display-manager restart)"
+    fi
 elif ((RELOGIN)); then
     info "Kein Login-Screen aktiv (SDDM) – einfach ab- und wieder anmelden"
 fi

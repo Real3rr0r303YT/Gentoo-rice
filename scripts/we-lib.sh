@@ -20,8 +20,9 @@ we_steam_roots() {
     for r in "$HOME/.var/app/com.valvesoftware.Steam/.local/share/Steam" \
              "$HOME/.var/app/com.valvesoftware.Steam/data/Steam" \
              "$HOME/.local/share/Steam" "$HOME/.steam/steam"; do
-        [[ -d $r/steamapps ]] && readlink -f "$r"
+        if [[ -d $r/steamapps ]]; then readlink -f "$r"; fi
     done | awk '!seen[$0]++'
+    return 0
 }
 
 # Alle Steam-Bibliotheken (inkl. libraryfolders.vdf und WE_STEAM_LIBRARIES)
@@ -35,7 +36,8 @@ we_libraries() {
             fi
         done
         for p in ${WE_STEAM_LIBRARIES:-}; do echo "$p"; done
-    } | while IFS= read -r p; do [[ -d $p/steamapps ]] && readlink -f "$p"; done | awk '!seen[$0]++'
+    } | while IFS= read -r p; do if [[ -d $p/steamapps ]]; then readlink -f "$p"; fi; done | awk '!seen[$0]++'
+    return 0
 }
 
 we_workshop_dirs() {
@@ -48,7 +50,7 @@ we_workshop_dirs() {
 we_assets_dir() {
     local l
     for l in $(we_libraries); do
-        [[ -d $l/steamapps/common/wallpaper_engine/assets ]] && { echo "$l/steamapps/common/wallpaper_engine/assets"; return 0; }
+        if [[ -d $l/steamapps/common/wallpaper_engine/assets ]]; then echo "$l/steamapps/common/wallpaper_engine/assets"; return 0; fi
     done
     return 1
 }
@@ -58,7 +60,7 @@ we_resolve() {
     local a=$1 w
     if [[ -d $a ]]; then readlink -f "$a"; return 0; fi
     if [[ $a =~ ^[0-9]+$ ]]; then
-        for w in $(we_workshop_dirs); do [[ -d $w/$a ]] && { echo "$w/$a"; return 0; }; done
+        for w in $(we_workshop_dirs); do if [[ -d $w/$a ]]; then echo "$w/$a"; return 0; fi; done
     fi
     return 1
 }

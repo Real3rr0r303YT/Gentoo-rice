@@ -38,6 +38,8 @@ keys() {
 
 choice=$(printf '%s\n' \
     "󰊗  Gaming-Modus an/aus" \
+    "󰅶  Wach bleiben (kein Sperren)" \
+    "󰛊  Normal-Modus" \
     "󰀻  Apps" \
     "󰏖  App-Store (Apps suchen + installieren)" \
     "󰓇  Spotify" \
@@ -77,6 +79,8 @@ case "$choice" in
     *"Virtuelle Maschinen"*) exec "$DIR/vm.sh" open ;;
     *"  OBS Studio")      exec flatpak run com.obsproject.Studio ;;
     *"Gaming-Modus an/aus") exec "$DIR/gaming-mode.sh" toggle ;;
+    *"Wach bleiben"*)     exec "$DIR/awake.sh" on ;;
+    *"  Normal-Modus")    exec "$DIR/awake.sh" off ;;
     *"Virenschutz installieren/aktualisieren") exec kitty --class rice-float --hold "$DIR/antivirus.sh" update ;;
     *"Virenscan (Home)")  exec kitty --class rice-float --hold "$DIR/antivirus.sh" scan "$HOME" ;;
     *"Quarantäne öffnen") mkdir -p "$HOME/.local/share/gentoo-rice/quarantine"; exec thunar "$HOME/.local/share/gentoo-rice/quarantine" ;;

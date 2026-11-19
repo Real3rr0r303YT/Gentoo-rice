@@ -298,6 +298,7 @@ A summary of installed versions is printed at the end.
 | `Super + B` | Firefox |
 | `Super + G` | Steam |
 | `Super + S` | Spotify |
+| Waybar coffee cup / rice menu | Stay awake (no locking, screen stays on) ↔ normal mode |
 | `Super + Shift + G` | Gaming mode on/off (no animations/blur/shadows/gaps, wallpaper paused; also via Waybar icon) |
 | `Super + E` | File manager |
 | `Super + A` | cava (audio visualizer) |

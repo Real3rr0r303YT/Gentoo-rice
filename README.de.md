@@ -298,6 +298,7 @@ Am Ende erscheint eine Übersicht der installierten Versionen.
 | `Super + B` | Firefox |
 | `Super + G` | Steam |
 | `Super + S` | Spotify |
+| Waybar-Kaffeetasse / Rice-Menü | Wach bleiben (kein Sperren, Bildschirm bleibt an) ↔ Normal-Modus |
 | `Super + Shift + G` | Gaming-Modus an/aus (keine Animationen/Blur/Schatten/Lücken, Hintergrund pausiert; auch per Waybar-Icon) |
 | `Super + E` | Dateimanager |
 | `Super + A` | cava (Audio-Visualizer) |

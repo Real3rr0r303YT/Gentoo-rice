@@ -2,7 +2,7 @@
 # Gentoo-rice – grafischer Login-Screen: SDDM (Wayland über Weston) + eigenes Theme
 # Copyright (C) 2026 3rr0r303YT – GPL-3.0-or-later
 #
-# Nutzung: ./scripts/login-screen.sh [--theme gentoo-rice|minecraft]
+# Nutzung: ./scripts/login-screen.sh [--theme gentoo-rice|minecraft|mac]
 #          ./install.sh --login            ./install.sh --login=minecraft
 # Rückgängig: ./scripts/login-screen-uninstall.sh
 # Notausgang, falls der Login-Screen nicht startet:
@@ -23,8 +23,9 @@ while (($#)); do
 done
 case $THEME in
     minecraft|blocks|gentoo-rice-blocks) THEME=gentoo-rice-blocks ;;
+    mac|macos|apple|gentoo-rice-mac) THEME=gentoo-rice-mac ;;
     ""|default|gentoo-rice) THEME=gentoo-rice ;;
-    *) printf 'Unbekanntes Theme: %s (gentoo-rice | minecraft)\n' "$THEME" >&2; exit 1 ;;
+    *) printf 'Unbekanntes Theme: %s (gentoo-rice | minecraft | mac)\n' "$THEME" >&2; exit 1 ;;
 esac
 
 TOTAL=7 STEP_LABEL=login KW_FILE=/etc/portage/package.accept_keywords/gentoo-rice-login
@@ -120,7 +121,7 @@ step "SDDM-Themes"
 $SUDO install -d -m 0755 "$LOGIN_STATE"
 $SUDO install -d -m 0755 -o "$USER_NAME" "$SDDM_SHARE"
 $SUDO mkdir -p /usr/share/sddm/themes
-for t in gentoo-rice gentoo-rice-blocks; do
+for t in gentoo-rice gentoo-rice-blocks gentoo-rice-mac; do
     dst=/usr/share/sddm/themes/$t
     record "$dst"
     $SUDO rm -rf "$dst"

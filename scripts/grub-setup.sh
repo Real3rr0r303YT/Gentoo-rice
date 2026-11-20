@@ -2,7 +2,7 @@
 # Gentoo-rice – GRUB-Bootmenü: Theme (Klötzchen oder blau), sichtbares Menü mit Auswahlzeit + Windows-Eintrag (os-prober)
 # Copyright (C) 2026 3rr0r303YT – GPL-3.0-or-later
 #
-# Nutzung: ./scripts/grub-setup.sh [--timeout SEKUNDEN] [--theme blocks|blue] [--no-theme]
+# Nutzung: ./scripts/grub-setup.sh [--timeout SEKUNDEN] [--theme blocks|blue|mac] [--no-theme]
 #          Standard: 5 s, Theme blocks (Klötzchen-Look)
 #          ./scripts/grub-setup.sh --restore               (Original von /etc/default/grub zurück)
 set -Eeuo pipefail
@@ -20,7 +20,8 @@ while (($#)); do
             case $t in
                 blocks|minecraft) THEME_NAME=gentoo-rice-blocks ;;
                 blue|blau) THEME_NAME=gentoo-rice ;;
-                *) printf 'Unbekanntes Theme: %s (blocks|blue)\n' "$t" >&2; exit 1 ;;
+                mac|macos|apple) THEME_NAME=gentoo-rice-mac ;;
+                *) printf 'Unbekanntes Theme: %s (blocks|blue|mac)\n' "$t" >&2; exit 1 ;;
             esac ;;
         -h|--help) sed -n '2,8p' "$0"; exit 0 ;;
         *) printf 'Unbekannte Option: %s\n' "$1" >&2; exit 1 ;;
@@ -108,6 +109,9 @@ install_theme() {
     if [[ $THEME_NAME == gentoo-rice ]]; then
         theme_blue "$tmp" || { rm -rf "$tmp"; return 1; }
         if [[ -f $tmp/rice-16.pf2 ]]; then font=rice-16.pf2; fi
+    elif [[ $THEME_NAME == gentoo-rice-mac ]]; then
+        theme_mac "$tmp" || { rm -rf "$tmp"; return 1; }
+        if [[ -f $tmp/mac-16.pf2 ]]; then font=mac-16.pf2; fi
     else
         # Klötzchen-Look: fertige Pixelbilder aus dem Repo + Unifont (Pixel-Schrift von GRUB)
         for f in /usr/share/grub/unicode.pf2 "$(dirname "$cfg")/fonts/unicode.pf2"; do
@@ -161,6 +165,46 @@ theme_blue() { # theme_blue <ordner> – Bilder + Schriften für das blaue Theme
         fi
     fi
     if [[ -f $tmp/rice-16.pf2 ]]; then ok "Schrift: $(basename "$fr")"
+    else warn "Keine eigene Schrift (grub-mkfont) – GRUB nimmt seine Standardschrift"; fi
+}
+
+theme_mac() { # theme_mac <ordner> – Mac-Bootpicker-Stil: dunkel, Glas-Zeilen, Inter, Fortschrittsbalken
+    local tmp=$1 bg="" f fr fb sz bold=()
+    command -v magick >/dev/null || { warn "ImageMagick (magick) fehlt – Theme übersprungen"; return 1; }
+    emerge_pkgs --optional media-fonts/inter
+    for f in /var/lib/gentoo-rice/sddm/background.jpg "$HOME/.cache/rice/current.png"; do
+        if [[ -s $f ]]; then bg=$f; break; fi
+    done
+    if [[ -n $bg ]] && magick "$bg" -resize 1920x1080^ -gravity center -extent 1920x1080 \
+        -resize 20% -blur 0x10 -resize 500% \
+        \( -size 1920x1080 xc:"rgba(0,0,0,0.55)" \) -composite \
+        -alpha off "PNG24:$tmp/background.png" 2>>"$LOG"; then
+        ok "Hintergrund: Wallpaper, stark weichgezeichnet und abgedunkelt"
+    else
+        magick -size 1920x1080 gradient:"#2c2c2e-#141416" "PNG24:$tmp/background.png"
+        ok "Hintergrund: dunkler Verlauf"
+    fi
+    slice9 "rgba(28,28,30,0.88)" menu 16 "$tmp"
+    slice9 "rgba(255,255,255,0.07)" item 12 "$tmp"
+    slice9 "rgba(255,255,255,0.24)" select 12 "$tmp"
+    slice9 "rgba(255,255,255,0.20)" bar 3 "$tmp"
+    slice9 "#ffffff" highlight 3 "$tmp"
+
+    # Schrift: Inter (sonst DejaVu Sans / JetBrains Mono) → "Mac Regular <n>" / "Mac Bold <n>"
+    if ensure_mkfont; then
+        for f in Inter "DejaVu Sans" "JetBrains Mono"; do
+            fr=$(fc-match -f '%{file}' "$f:style=Regular" 2>/dev/null || true)
+            if [[ -n $fr && $(fc-match -f '%{family}' "$f" 2>/dev/null) == *"${f%% *}"* ]]; then break; fi
+            fr=""
+        done
+        if [[ -n $fr ]]; then
+            fb=$(fc-match -f '%{file}' "$f:style=Bold" 2>/dev/null || true)
+            if [[ ! ${fb,,} =~ bold ]]; then fb=$fr; bold=(-b); fi
+            for sz in 14 16 18; do grub-mkfont -n Mac -s "$sz" -o "$tmp/mac-$sz.pf2" "$fr" >>"$LOG" 2>&1 || true; done
+            for sz in 18 26; do grub-mkfont -n Mac "${bold[@]}" -s "$sz" -o "$tmp/mac-bold-$sz.pf2" "$fb" >>"$LOG" 2>&1 || true; done
+        fi
+    fi
+    if [[ -f $tmp/mac-16.pf2 ]]; then ok "Schrift: $(basename "$fr")"
     else warn "Keine eigene Schrift (grub-mkfont) – GRUB nimmt seine Standardschrift"; fi
 }
 

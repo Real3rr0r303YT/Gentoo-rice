@@ -98,7 +98,7 @@ done
 $SUDO install -d "$ROOT/etc/portage/package.accept_keywords" "$ROOT/etc/portage/package.use"
 printf '%s\n' "app-admin/calamares ~amd64" |
     $SUDO tee "$ROOT/etc/portage/package.accept_keywords/$SLUG" >/dev/null
-printf '%s\n' "sys-kernel/installkernel dracut" "sys-boot/grub grub_platforms_efi-64" |
+printf '%s\n' "sys-kernel/installkernel dracut" "sys-boot/grub grub_platforms_efi-64" "dev-libs/libpwquality python" |
     $SUDO tee "$ROOT/etc/portage/package.use/$SLUG" >/dev/null
 # shellcheck disable=SC2016  # wird im chroot ausgewertet
 $SUDO chroot "$ROOT" /bin/bash -c '

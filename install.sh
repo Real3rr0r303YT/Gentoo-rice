@@ -17,15 +17,16 @@ for arg in "$@"; do
         --no-claude) CLAUDE=0 ;;
         --login|--login=default|--login=gentoo-rice) LOGIN=1 LOGIN_THEME=gentoo-rice ;;
         --login=minecraft|--login=blocks) LOGIN=1 LOGIN_THEME=gentoo-rice-blocks ;;
+        --login=mac|--login=macos) LOGIN=1 LOGIN_THEME=gentoo-rice-mac ;;
         --grub)    GRUB=1 ;;
         --no-grub) GRUB=0 ;;
         --no-apps) APPS=0 ;;
         --no-av)   AV=0 ;;
         -h|--help)
-            printf 'Nutzung: ./install.sh [--dev] [--we] [--login[=minecraft]] [--no-grub] [--no-apps] [--no-av] [--no-claude] [--dry-run]\n'
+            printf 'Nutzung: ./install.sh [--dev] [--we] [--login[=minecraft|mac]] [--no-grub] [--no-apps] [--no-av] [--no-claude] [--dry-run]\n'
             printf '  --dev      zusätzlich Entwickler-Setup (scripts/dev-setup.sh)\n'
             printf '  --we       zusätzlich Wallpaper Engine (scripts/wallpaperengine.sh)\n'
-            printf '  --login    grafischer Login-Screen (SDDM, Wayland); --login=minecraft für den Klötzchen-Look\n'
+            printf '  --login    grafischer Login-Screen (SDDM, Wayland); --login=minecraft (Klötzchen) / --login=mac (macOS-Stil)\n'
             printf '  --no-grub  GRUB nicht anfassen (Standard: Klötzchen-Theme, Menü 5 s, Windows-Eintrag)\n'
             printf '  --no-apps  ohne Spotify + Spicetify, Gaming-Apps (Minecraft, CurseForge, Sober), Proton/OpSec-Apps, OBS\n'
             printf '  --no-av    ohne Virenschutz (ClamAV + Echtzeit-Wächter für Downloads/Minecraft-Mods)\n'
@@ -69,7 +70,7 @@ PKGS_OPTIONAL=(
     gui-apps/hyprpolkitagent media-sound/pavucontrol xfce-base/thunar net-misc/networkmanager
     net-wireless/bluez net-wireless/blueman x11-themes/papirus-icon-theme
 )
-PKGS_FONTS=( media-fonts/jetbrains-mono media-fonts/fontawesome media-fonts/noto-emoji media-fonts/noto-cjk )
+PKGS_FONTS=( media-fonts/inter media-fonts/jetbrains-mono media-fonts/fontawesome media-fonts/noto-emoji media-fonts/noto-cjk )
 PKGS_FIREFOX=( www-client/firefox-bin )
 PKGS_AUDIO=( media-video/pipewire media-video/wireplumber )
 PKGS_GPU=( sys-kernel/linux-firmware dev-util/vulkan-tools x11-apps/mesa-progs )

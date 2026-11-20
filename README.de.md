@@ -98,6 +98,16 @@ Setzt `GRUB_TIMEOUT`, `GRUB_TIMEOUT_STYLE=menu` und `GRUB_DISABLE_OS_PROBER=fals
 
 Rice-Menü → *Virtuelle Maschinen*. Linux-Distros lädt Boxes selbst herunter; für Windows die ISO von microsoft.com/software-download/windows11 laden und in Boxes auswählen. Braucht im BIOS „SVM Mode“ (AMD) bzw. „VT-x“ (Intel).
 
+### Login- & Boot-Look (Mac / Blau / Minecraft)
+
+```bash
+./scripts/look.sh mac         # Login wie macOS (große Uhr, Avatar, Passwort-Pille) + GRUB im Mac-Bootpicker-Stil
+./scripts/look.sh blue        # blauer Glas-Look
+./scripts/look.sh minecraft   # Klötzchen-Look
+```
+
+Auch im Rice-Menü (*Login- & Boot-Look wechseln*). Hyprland und das Rice bleiben unverändert; eigene Umsetzung ohne Apple-Grafiken.
+
 ### Virenschutz (ClamAV)
 
 ```bash

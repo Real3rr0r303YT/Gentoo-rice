@@ -61,6 +61,7 @@ choice=$(printf '%s\n' \
     "󰋩  Wallpaper wählen" \
     "󰒝  Zufalls-Wallpaper" \
     "󰍂  Login-Screen angleichen" \
+    "󰍹  Login- & Boot-Look wechseln (Mac / Blau / Minecraft)" \
     "󰚰  Apps aktualisieren" \
     "󰚰  Rice aktualisieren" \
     "󰣧  Gentoo aktualisieren (emerge @world)" \
@@ -94,6 +95,9 @@ case "$choice" in
     *"Theme ändern")      exec "$DIR/theme-picker.sh" ;;
     *"Wallpaper wählen")  exec "$DIR/wallpaper-picker.sh" ;;
     *"Zufalls-Wallpaper") exec "$DIR/wallpaper.sh" random ;;
+    *"Boot-Look wechseln"*)
+        look=$(printf '%s\n' "mac" "blue" "minecraft" | rofi -dmenu -i -p "Look" -theme "$THEME" -theme-str 'window { width: 300px; } listview { lines: 3; }') || exit 0
+        [[ -n $look ]] && exec kitty --class rice-float --hold "$DIR/look.sh" "$look" ;;
     *"Login-Screen angleichen")
         if "$DIR/sddm-sync.sh" >/dev/null 2>&1; then notify "Login-Screen" "an Wallpaper und Avatar angeglichen"
         else notify "Login-Screen" "nicht eingerichtet – ./install.sh --login"; fi ;;

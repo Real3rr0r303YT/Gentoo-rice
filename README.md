@@ -98,6 +98,16 @@ Sets `GRUB_TIMEOUT`, `GRUB_TIMEOUT_STYLE=menu` and `GRUB_DISABLE_OS_PROBER=false
 
 Rice menu → *Virtuelle Maschinen*. Boxes downloads Linux distros itself; for Windows get the ISO from microsoft.com/software-download/windows11 and pick it in Boxes. Needs "SVM Mode" (AMD) or "VT-x" (Intel) enabled in the BIOS.
 
+### Login & boot look (Mac / blue / Minecraft)
+
+```bash
+./scripts/look.sh mac         # macOS-style login (big clock, avatar, password pill) + GRUB in Mac startup-picker style
+./scripts/look.sh blue        # blue glass look
+./scripts/look.sh minecraft   # block look
+```
+
+Also in the rice menu (*Login- & Boot-Look wechseln*). Hyprland and the rice stay as they are; own design, no Apple artwork.
+
 ### Antivirus (ClamAV)
 
 ```bash

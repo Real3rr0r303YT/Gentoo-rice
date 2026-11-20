@@ -92,6 +92,14 @@ class Sddm(QObject):
     def powerOff(self):
         pass
 
+    @Property(bool, constant=True)
+    def canSuspend(self):
+        return True
+
+    @Slot()
+    def suspend(self):
+        pass
+
 
 class Keyboard(QObject):
     @Property(bool, constant=True)

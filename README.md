@@ -108,6 +108,14 @@ Rice menu → *Virtuelle Maschinen*. Boxes downloads Linux distros itself; for W
 
 Also in the rice menu (*Login- & Boot-Look wechseln*). Hyprland and the rice stay as they are; own design, no Apple artwork.
 
+### Own ISO: Darkroot OS (Gentoo + Calamares + Gentoo-rice)
+
+```bash
+./iso/build-iso.sh            # build on Gentoo (~25 GB free, sudo) → iso/out/darkroot-<date>.iso
+```
+
+Based on the official **Gentoo LiveGUI ISO**. The script installs **Calamares**, the kernel (`gentoo-kernel-bin`) and GRUB into the live system, adds branding and the Gentoo-rice and repacks the ISO (keeping the original boot sectors). The live desktop starts *Darkroot OS installieren*: pick a disk, create a user, done. On first login a terminal opens and installs the rice (`./install.sh --login=mac`). Text-mode alternative: `sudo cli-install`. Rename: `ISO_NAME="My OS" ISO_SLUG=myos ./iso/build-iso.sh`.
+
 ### Antivirus (ClamAV)
 
 ```bash

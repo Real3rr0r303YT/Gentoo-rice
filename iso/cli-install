@@ -1,0 +1,195 @@
+#!/usr/bin/env bash
+# Darkroot-OS-Konsolen-Installer (Alternative zu Calamares) – installiert Gentoo (OpenRC, Desktop-Profil, Binärpakete) auf eine
+# ganze Platte und legt das Gentoo-rice für den ersten Login bereit.
+# Läuft im Live-System der Darkroot-OS-ISO (oder der offiziellen Gentoo-ISO) als root.
+# Copyright (C) 2026 3rr0r303YT – GPL-3.0-or-later
+#
+# Ablauf: Platte wählen → GPT (EFI 1 GiB + Root ext4) → Stage3 desktop-openrc →
+#         Kernel (gentoo-kernel-bin) + GRUB (UEFI) → Benutzer → Gentoo-rice nach ~/Gentoo-rice
+set -Eeuo pipefail
+OS_NAME="Darkroot OS"
+OS_SLUG="darkroot"
+MIRROR=${GENTOO_MIRROR:-https://distfiles.gentoo.org}
+MNT=/mnt/gentoo
+RICE_SRC=/opt/darkroot/Gentoo-rice
+RICE_GIT=https://github.com/Real3rr0r303YT/Gentoo-rice.git
+
+B=$'\e[1m' G=$'\e[32m' Y=$'\e[33m' R=$'\e[31m' C=$'\e[36m' N=$'\e[0m'
+step() { printf '\n%s==> %s%s\n' "$C$B" "$*" "$N"; }
+ok()   { printf '  %s✔%s %s\n' "$G" "$N" "$*"; }
+warn() { printf '  %s!%s %s\n' "$Y" "$N" "$*"; }
+die()  { printf '\n%s✘ %s%s\n' "$R$B" "$*" "$N" >&2; exit 1; }
+ask()  { local a; read -rp "  $1 " a; printf '%s' "$a"; }
+trap 'die "Abbruch in Zeile $LINENO: $BASH_COMMAND"' ERR
+
+[[ $EUID -eq 0 ]] || die "Bitte als root starten (im Live-System bist du root)."
+[[ -d /sys/firmware/efi ]] || die "Nur UEFI wird unterstützt – im BIOS den UEFI-Modus einschalten (CSM/Legacy aus)."
+for t in parted mkfs.vfat mkfs.ext4 curl tar; do command -v "$t" >/dev/null || die "$t fehlt im Live-System."; done
+
+clear
+printf '%s%s Installer%s\n' "$B" "$OS_NAME" "$N"
+printf 'Gentoo (OpenRC, Binärpakete) + Hyprland-Rice. Es wird die GANZE gewählte Platte gelöscht.\n'
+
+# ── Netzwerk ──────────────────────────────────────────────
+step "Netzwerk"
+if curl -fsS -o /dev/null --max-time 10 "$MIRROR"; then ok "Internet erreichbar"
+else die "Kein Internet. WLAN: net-setup · Kabel: dhcpcd · dann erneut: cli-install"; fi
+
+# ── Platte ────────────────────────────────────────────────
+step "Ziel-Platte"
+lsblk -dno NAME,SIZE,MODEL,TYPE | awk '$NF == "disk"' | sed 's/^/  /'
+disk=$(ask "Platte (z. B. nvme0n1 oder sda):")
+disk=/dev/${disk#/dev/}
+[[ -b $disk ]] || die "$disk gibt es nicht."
+lsblk "$disk" | sed 's/^/  /'
+printf '\n  %sALLE Daten auf %s werden gelöscht!%s\n' "$R$B" "$disk" "$N"
+[[ $(ask "Zum Bestätigen den Namen der Platte eintippen (${disk#/dev/}):") == "${disk#/dev/}" ]] || die "Abgebrochen."
+
+# ── Einstellungen ─────────────────────────────────────────
+step "Einstellungen"
+user=$(ask "Benutzername (klein, ohne Leerzeichen):")
+[[ $user =~ ^[a-z_][a-z0-9_-]{0,31}$ ]] || die "Ungültiger Benutzername."
+host=$(ask "Rechnername [darkroot]:"); host=${host:-darkroot}
+tz=$(ask "Zeitzone [Europe/Berlin]:"); tz=${tz:-Europe/Berlin}
+[[ -f /usr/share/zoneinfo/$tz ]] || die "Zeitzone $tz unbekannt."
+while :; do
+    read -rsp "  Passwort für $user (auch für root): " pw1; echo
+    read -rsp "  Passwort wiederholen: " pw2; echo
+    [[ -n $pw1 && $pw1 == "$pw2" ]] && break
+    warn "Passwörter leer oder ungleich – nochmal"
+done
+
+# ── Partitionieren ────────────────────────────────────────
+step "Partitionieren: $disk (GPT, EFI 1 GiB + Root)"
+swapoff -a 2>/dev/null || true
+umount -R "$MNT" 2>/dev/null || true
+wipefs -af "$disk" >/dev/null
+parted -s "$disk" mklabel gpt \
+    mkpart EFI fat32 1MiB 1025MiB set 1 esp on \
+    mkpart ROOT ext4 1025MiB 100%
+partprobe "$disk" 2>/dev/null || true
+sleep 2
+p=""; [[ ${disk: -1} =~ [0-9] ]] && p=p
+efi=${disk}${p}1 root=${disk}${p}2
+mkfs.vfat -F 32 -n EFI "$efi" >/dev/null
+mkfs.ext4 -F -q -L "$OS_SLUG" "$root"
+mkdir -p "$MNT"
+mount "$root" "$MNT"
+mkdir -p "$MNT/efi"
+mount "$efi" "$MNT/efi"
+ok "$efi → /efi · $root → /"
+
+# ── Stage3 ────────────────────────────────────────────────
+step "Stage3 (desktop-openrc) laden"
+base="$MIRROR/releases/amd64/autobuilds"
+stage=$(curl -fsSL "$base/latest-stage3-amd64-desktop-openrc.txt" | awk '!/^#/ && NF {print $1; exit}')
+[[ -n $stage ]] || die "Stage3-Version nicht ermittelbar."
+curl -fL --progress-bar -o "$MNT/stage3.tar.xz" "$base/$stage"
+if curl -fsSL -o "$MNT/stage3.sha256" "$base/$stage.sha256"; then
+    want=$(grep -oE '\b[0-9a-f]{64}\b' "$MNT/stage3.sha256" | head -n1)
+    [[ $(sha256sum "$MNT/stage3.tar.xz" | cut -d' ' -f1) == "$want" ]] || die "Stage3-Prüfsumme falsch."
+    ok "Prüfsumme ok"
+fi
+tar xpf "$MNT/stage3.tar.xz" --xattrs-include='*.*' --numeric-owner -C "$MNT"
+rm -f "$MNT/stage3.tar.xz" "$MNT/stage3.sha256"
+ok "$(basename "$stage")"
+
+# ── Konfiguration ─────────────────────────────────────────
+step "Konfiguration"
+cat >> "$MNT/etc/portage/make.conf" <<EOF
+
+# --- $OS_NAME ---
+COMMON_FLAGS="-O2 -pipe -march=x86-64-v3"
+CFLAGS="\${COMMON_FLAGS}"
+CXXFLAGS="\${COMMON_FLAGS}"
+MAKEOPTS="-j$(nproc) -l$(nproc)"
+FEATURES="\${FEATURES} getbinpkg"
+EMERGE_DEFAULT_OPTS="--getbinpkg --binpkg-respect-use=y --quiet-build=y"
+ACCEPT_LICENSE="*"
+GRUB_PLATFORMS="efi-64"
+L10N="de en"
+EOF
+grep -q avx2 /proc/cpuinfo || sed -i 's/-march=x86-64-v3/-march=x86-64/' "$MNT/etc/portage/make.conf"
+mkdir -p "$MNT/etc/portage/package.use"
+echo "sys-kernel/installkernel dracut grub" > "$MNT/etc/portage/package.use/installkernel"
+cp -L /etc/resolv.conf "$MNT/etc/"
+rootuuid=$(blkid -s UUID -o value "$root") efiuuid=$(blkid -s UUID -o value "$efi")
+cat > "$MNT/etc/fstab" <<EOF
+# $OS_NAME
+UUID=$rootuuid  /     ext4  defaults,noatime  0 1
+UUID=$efiuuid   /efi  vfat  umask=0077        0 2
+EOF
+echo "hostname=\"$host\"" > "$MNT/etc/conf.d/hostname"
+sed -i 's/^keymap=.*/keymap="de-latin1"/' "$MNT/etc/conf.d/keymaps"
+ln -sf "../usr/share/zoneinfo/$tz" "$MNT/etc/localtime"
+printf 'de_DE.UTF-8 UTF-8\nen_US.UTF-8 UTF-8\n' > "$MNT/etc/locale.gen"
+ok "make.conf, fstab, $host, $tz, Tastatur de"
+
+# ── chroot ────────────────────────────────────────────────
+step "System installieren (Binärpakete – dauert eine Weile)"
+mount --types proc /proc "$MNT/proc"
+for d in sys dev run; do mount --rbind "/$d" "$MNT/$d"; mount --make-rslave "$MNT/$d"; done
+# Rice ins neue System (Kopie von der ISO, sonst im chroot per git)
+if [[ -d $RICE_SRC ]]; then
+    rm -rf "$MNT/opt/darkroot-rice"
+    cp -a "$RICE_SRC" "$MNT/opt/darkroot-rice"
+fi
+
+cat > "$MNT/root/darkroot-chroot.sh" <<CHROOT
+#!/bin/bash
+set -Eeuo pipefail
+source /etc/profile
+emerge-webrsync -q
+eselect profile set default/linux/amd64/23.0/desktop >/dev/null 2>&1 || true
+locale-gen >/dev/null
+eselect locale set de_DE.utf8 >/dev/null 2>&1 || true
+env-update >/dev/null && source /etc/profile
+emerge --noreplace sys-kernel/linux-firmware sys-kernel/installkernel sys-kernel/gentoo-kernel-bin \
+    sys-boot/grub sys-boot/efibootmgr net-misc/dhcpcd net-wireless/iwd app-admin/sudo \
+    sys-fs/dosfstools dev-vcs/git app-eselect/eselect-repository
+cat >> /etc/default/grub <<'EOF'
+GRUB_DISTRIBUTOR="$OS_NAME"
+GRUB_TIMEOUT=5
+GRUB_TIMEOUT_STYLE=menu
+EOF
+grub-install --target=x86_64-efi --efi-directory=/efi --bootloader-id="$OS_SLUG" --removable
+grub-install --target=x86_64-efi --efi-directory=/efi --bootloader-id="$OS_SLUG"
+grub-mkconfig -o /boot/grub/grub.cfg
+rc-update add dhcpcd default
+rc-update add iwd default 2>/dev/null || true
+groups=""
+for g in users wheel audio video usb input plugdev; do getent group "\$g" >/dev/null && groups+="\${groups:+,}\$g"; done
+id "$user" >/dev/null 2>&1 || useradd -m -G "\$groups" -s /bin/bash "$user"
+echo '%wheel ALL=(ALL:ALL) ALL' > /etc/sudoers.d/wheel
+chmod 0440 /etc/sudoers.d/wheel
+if [[ -d /opt/darkroot-rice ]]; then mv /opt/darkroot-rice "/home/$user/Gentoo-rice"
+else git clone -q "$RICE_GIT" "/home/$user/Gentoo-rice"; fi
+chown -R "$user:$user" "/home/$user"
+CHROOT
+chroot "$MNT" /bin/bash /root/darkroot-chroot.sh
+rm -f "$MNT/root/darkroot-chroot.sh"
+printf '%s:%s\nroot:%s\n' "$user" "$pw1" "$pw1" | chroot "$MNT" chpasswd
+unset pw1 pw2
+
+# Hinweis beim ersten Login
+cat > "$MNT/home/$user/.darkroot-firstboot" <<EOF
+
+  Willkommen bei $OS_NAME!
+  Jetzt das Rice installieren (Hyprland, Login-Screen im Mac-Stil, Apps):
+
+      cd ~/Gentoo-rice && ./install.sh --login=mac
+
+  Danach: loginctl reboot
+
+EOF
+cat >> "$MNT/home/$user/.bash_profile" <<'EOF'
+[ -f ~/.darkroot-firstboot ] && [ ! -L ~/.config/hypr ] && cat ~/.darkroot-firstboot
+EOF
+chroot "$MNT" chown "$user:$user" "/home/$user/.darkroot-firstboot" "/home/$user/.bash_profile"
+ok "Gentoo installiert, Benutzer $user angelegt, Rice in /home/$user/Gentoo-rice"
+
+# ── Fertig ────────────────────────────────────────────────
+step "Fertig"
+umount -R "$MNT" || warn "Aushängen hat nicht ganz geklappt – trotzdem neu starten ist ok"
+printf '\n%s%s ist installiert.%s USB-Stick abziehen und neu starten: reboot\n' "$G$B" "$OS_NAME" "$N"
+printf 'Nach dem Login: cd ~/Gentoo-rice && ./install.sh --login=mac\n'

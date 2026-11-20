@@ -27,7 +27,7 @@ jobs:
         run: for f in install.sh uninstall.sh scripts/*.sh; do bash -n "$f"; done
 
       - name: ShellCheck
-        run: shellcheck -x -S style install.sh uninstall.sh scripts/*.sh
+        run: shellcheck -x -S style install.sh uninstall.sh scripts/*.sh iso/build-iso.sh iso/cli-install iso/darkroot-postinstall
 
       - name: JSON (Waybar, fastfetch, Firefox-Policies)
         run: |

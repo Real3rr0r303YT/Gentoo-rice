@@ -55,7 +55,7 @@ ok "alles da"
 
 # ── 2. Offizielle LiveGUI-ISO laden + prüfen ──────────────
 step "Offizielle Gentoo-LiveGUI-ISO"
-latest=$(curl -fsSL "$AUTOBUILDS/latest-livegui-amd64.txt" | awk '!/^#/ && NF {print $1; exit}') ||
+latest=$(curl -fsSL "$AUTOBUILDS/latest-livegui-amd64.txt" | awk '$1 ~ /\.iso$/ {print $1; exit}') ||
     die "Konnte die aktuelle LiveGUI-Version nicht ermitteln ($AUTOBUILDS)."
 [[ -n $latest ]] || die "Leere Antwort von latest-livegui-amd64.txt"
 base_iso="$WORK/$(basename "$latest")"

@@ -3,7 +3,7 @@
 # Copyright (C) 2026 3rr0r303YT – GPL-3.0-or-later
 #
 # Ergebnis: iso/out/darkroot-<datum>.iso
-#   - Live-Desktop (KDE aus der Gentoo-LiveGUI) mit "Darkroot OS installieren" (Calamares)
+#   - Live-Desktop XFCE mit "Darkroot OS installieren" (Calamares, startet automatisch)
 #   - Calamares kopiert das Live-System auf die Platte (UEFI, GRUB), legt den Benutzer an
 #     und legt das Gentoo-rice bereit – es installiert sich beim ersten Login (Hyprland, Mac-Login, Apps)
 #   - Konsolen-Installer als Alternative: cli-install
@@ -120,18 +120,39 @@ printf '%s\n' "app-admin/calamares ~amd64" |
     $SUDO tee "$ROOT/etc/portage/package.accept_keywords/$SLUG" >/dev/null
 printf '%s\n' "sys-kernel/installkernel dracut" "sys-boot/grub grub_platforms_efi-64" "dev-libs/libpwquality python" |
     $SUDO tee "$ROOT/etc/portage/package.use/$SLUG" >/dev/null
+info "Paketliste aktualisieren, Calamares + XFCE + Kernel installieren (10–30 Min.) …"
+mark=$(wc -l < "$LOG")
 # shellcheck disable=SC2016  # wird im chroot ausgewertet
 $SUDO chroot "$ROOT" /bin/bash -c '
     set -e
     source /etc/profile
-    [ -d /var/db/repos/gentoo/metadata ] || emerge-webrsync -q
-    emerge --getbinpkg --binpkg-respect-use=y --quiet-build=y --noreplace --autounmask-continue=y \
+    # Paketliste der ISO ist alt → frisch holen, damit sie zu den aktuellen Binärpaketen passt
+    emerge-webrsync -q
+    # Schlüssel für signierte Binärpakete
+    command -v getuto >/dev/null && getuto >/dev/null 2>&1 || true
+    emerge --getbinpkg --binpkg-respect-use=y --quiet-build=y --noreplace \
+        --autounmask=y --autounmask-use=y --autounmask-license=y --autounmask-continue=y \
         app-admin/calamares sys-kernel/installkernel sys-kernel/gentoo-kernel-bin \
         sys-boot/grub sys-boot/efibootmgr sys-fs/dosfstools sys-fs/e2fsprogs sys-apps/gptfdisk \
-        dev-vcs/git net-misc/rsync
-' >>"$LOG" 2>&1 || warn "emerge im Live-System meldete Fehler (Details im Log)"
-$SUDO chroot "$ROOT" sh -c 'command -v calamares' >/dev/null || die "Calamares konnte nicht installiert werden (Details im Log)."
-ok "Calamares, gentoo-kernel-bin, GRUB im Live-System"
+        dev-vcs/git net-misc/rsync \
+        xfce-base/xfce4-meta x11-terms/xfce4-terminal xfce-extra/xfce4-whiskermenu-plugin
+' >>"$LOG" 2>&1 || warn "emerge im Live-System meldete Fehler"
+if ! $SUDO chroot "$ROOT" sh -c 'command -v calamares' >/dev/null; then
+    printf '  %s--- letzte Fehler aus dem Log ---%s\n' "$D" "$N"
+    tail -n +"$((mark + 1))" "$LOG" | grep -E '^!!!|^ \* (ERROR|Error)|emerge: there are no|Cannot resolve|masked by|conflict|failed' | tail -15 | sed 's/^/    /'
+    die "Calamares konnte nicht installiert werden (vollständig: $LOG)."
+fi
+ok "Calamares, XFCE, gentoo-kernel-bin, GRUB im Live-System"
+
+# Live-Desktop: XFCE statt KDE (Autologin-Sitzung umstellen)
+if [[ -f $ROOT/usr/share/xsessions/xfce.desktop ]]; then
+    while IFS= read -r f; do
+        $SUDO sed -i -E 's/^Session=.*/Session=xfce.desktop/; s/^autologin-session=.*/autologin-session=xfce/' "$f"
+    done < <($SUDO grep -rlE '^(Session|autologin-session)=' "$ROOT/etc/sddm.conf" "$ROOT/etc/sddm.conf.d" "$ROOT/etc/lightdm" 2>/dev/null)
+    ok "Live-Desktop: XFCE"
+else
+    warn "XFCE-Sitzung nicht gefunden – Live-Desktop bleibt KDE"
+fi
 
 # ── 5. Branding, Installer, Gentoo-rice ───────────────────
 step "$NAME einrichten: Calamares-Konfiguration, Branding, Rice"

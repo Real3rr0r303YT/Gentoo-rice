@@ -118,7 +118,7 @@ done
 $SUDO install -d "$ROOT/etc/portage/package.accept_keywords" "$ROOT/etc/portage/package.use"
 printf '%s\n' "app-admin/calamares ~amd64" |
     $SUDO tee "$ROOT/etc/portage/package.accept_keywords/$SLUG" >/dev/null
-printf '%s\n' "sys-kernel/installkernel dracut" "sys-boot/grub grub_platforms_efi-64" "dev-libs/libpwquality python" \
+printf '%s\n' "sys-kernel/installkernel dracut" "sys-boot/grub grub_platforms_efi-64 mount" "dev-libs/libpwquality python" \
     "dev-libs/libdbusmenu gtk3" |
     $SUDO tee "$ROOT/etc/portage/package.use/$SLUG" >/dev/null
 info "Paketliste aktualisieren, Calamares + XFCE + Kernel installieren (10–30 Min.) …"
@@ -132,12 +132,18 @@ $SUDO chroot "$ROOT" /bin/bash -c '
     emerge-webrsync -q
     # Schlüssel für signierte Binärpakete
     command -v getuto >/dev/null && getuto >/dev/null 2>&1 || true
+    PKGS="app-admin/calamares sys-kernel/installkernel sys-kernel/gentoo-kernel-bin
+        sys-boot/grub sys-boot/efibootmgr sys-fs/dosfstools sys-fs/e2fsprogs sys-apps/gptfdisk
+        dev-vcs/git net-misc/rsync
+        xfce-base/xfce4-meta x11-terms/xfce4-terminal xfce-extra/xfce4-whiskermenu-plugin"
+    # nötige USE-/Keyword-/Lizenz-Änderungen von Portage selbst eintragen lassen (2 Durchgänge)
+    for i in 1 2; do
+        CONFIG_PROTECT_MASK=/etc/portage emerge --pretend --getbinpkg --noreplace \
+            --autounmask=y --autounmask-write=y --autounmask-use=y --autounmask-license=y \
+            --autounmask-keep-masks=y $PKGS >/dev/null 2>&1 || true
+    done
     emerge --getbinpkg --binpkg-respect-use=y --quiet-build=y --noreplace \
-        --autounmask=y --autounmask-use=y --autounmask-license=y --autounmask-continue=y \
-        app-admin/calamares sys-kernel/installkernel sys-kernel/gentoo-kernel-bin \
-        sys-boot/grub sys-boot/efibootmgr sys-fs/dosfstools sys-fs/e2fsprogs sys-apps/gptfdisk \
-        dev-vcs/git net-misc/rsync \
-        xfce-base/xfce4-meta x11-terms/xfce4-terminal xfce-extra/xfce4-whiskermenu-plugin
+        --autounmask=y --autounmask-use=y --autounmask-license=y --autounmask-continue=y $PKGS
 ' >>"$LOG" 2>&1 || warn "emerge im Live-System meldete Fehler"
 if ! $SUDO chroot "$ROOT" sh -c 'command -v calamares' >/dev/null; then
     printf '  %s--- letzte Fehler aus dem Log ---%s\n' "$D" "$N"

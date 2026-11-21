@@ -108,14 +108,6 @@ Rice-Menü → *Virtuelle Maschinen*. Linux-Distros lädt Boxes selbst herunter;
 
 Auch im Rice-Menü (*Login- & Boot-Look wechseln*). Hyprland und das Rice bleiben unverändert; eigene Umsetzung ohne Apple-Grafiken.
 
-### Eigene ISO: Darkroot OS (Gentoo + Calamares + Gentoo-rice)
-
-```bash
-./iso/build-iso.sh            # auf Gentoo bauen (~25 GB frei, sudo) → iso/out/darkroot-<datum>.iso
-```
-
-Basis ist die offizielle **Gentoo-LiveGUI-ISO**. Das Skript installiert **Calamares**, den Kernel (`gentoo-kernel-bin`) und GRUB ins Live-System, legt Branding und das Gentoo-rice dazu und packt die ISO neu (Bootsektoren der Original-ISO bleiben). Im Live-Desktop (XFCE) startet *Darkroot OS installieren*: Platte wählen, Benutzer anlegen, fertig. Beim ersten Login öffnet sich ein Terminal und installiert das Rice (`./install.sh --login=mac`). Alternative ohne Grafik: `sudo cli-install`. Name änderbar: `ISO_NAME="Mein OS" ISO_SLUG=meinos ./iso/build-iso.sh`.
-
 ### Virenschutz (ClamAV)
 
 ```bash

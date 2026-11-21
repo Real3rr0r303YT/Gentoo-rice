@@ -145,7 +145,7 @@ locale-gen >/dev/null
 eselect locale set de_DE.utf8 >/dev/null 2>&1 || true
 env-update >/dev/null && source /etc/profile
 emerge --noreplace sys-kernel/linux-firmware sys-kernel/installkernel sys-kernel/gentoo-kernel-bin \
-    sys-boot/grub sys-boot/efibootmgr net-misc/dhcpcd net-wireless/iwd app-admin/sudo \
+    sys-boot/grub sys-boot/efibootmgr net-misc/networkmanager app-admin/sudo \
     sys-fs/dosfstools dev-vcs/git app-eselect/eselect-repository
 cat >> /etc/default/grub <<'EOF'
 GRUB_DISTRIBUTOR="$OS_NAME"
@@ -155,8 +155,7 @@ EOF
 grub-install --target=x86_64-efi --efi-directory=/efi --bootloader-id="$OS_SLUG" --removable
 grub-install --target=x86_64-efi --efi-directory=/efi --bootloader-id="$OS_SLUG"
 grub-mkconfig -o /boot/grub/grub.cfg
-rc-update add dhcpcd default
-rc-update add iwd default 2>/dev/null || true
+rc-update add NetworkManager default
 groups=""
 for g in users wheel audio video usb input plugdev; do getent group "\$g" >/dev/null && groups+="\${groups:+,}\$g"; done
 id "$user" >/dev/null 2>&1 || useradd -m -G "\$groups" -s /bin/bash "$user"

@@ -135,7 +135,8 @@ $SUDO chroot "$ROOT" /bin/bash -c '
     PKGS="app-admin/calamares sys-kernel/installkernel sys-kernel/gentoo-kernel-bin
         sys-boot/grub sys-boot/efibootmgr sys-fs/dosfstools sys-fs/e2fsprogs sys-apps/gptfdisk
         dev-vcs/git net-misc/rsync
-        xfce-base/xfce4-meta x11-terms/xfce4-terminal xfce-extra/xfce4-whiskermenu-plugin"
+        xfce-base/xfce4-meta x11-terms/xfce4-terminal xfce-extra/xfce4-whiskermenu-plugin
+        net-misc/networkmanager gnome-extra/nm-applet"
     # nötige USE-/Keyword-/Lizenz-Änderungen von Portage selbst eintragen lassen (2 Durchgänge)
     for i in 1 2; do
         CONFIG_PROTECT_MASK=/etc/portage emerge --pretend --getbinpkg --noreplace \
@@ -144,6 +145,9 @@ $SUDO chroot "$ROOT" /bin/bash -c '
     done
     emerge --getbinpkg --binpkg-respect-use=y --quiet-build=y --noreplace \
         --autounmask=y --autounmask-use=y --autounmask-license=y --autounmask-continue=y $PKGS
+    # WLAN/LAN im Live-System und im installierten System über NetworkManager (Applet in XFCE)
+    rc-update add NetworkManager default >/dev/null 2>&1 || true
+    for s in dhcpcd wpa_supplicant iwd; do rc-update del "$s" default >/dev/null 2>&1 || true; done
 ' >>"$LOG" 2>&1 || warn "emerge im Live-System meldete Fehler"
 if ! $SUDO chroot "$ROOT" sh -c 'command -v calamares' >/dev/null; then
     printf '  %s--- letzte Fehler aus dem Log ---%s\n' "$D" "$N"

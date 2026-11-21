@@ -51,11 +51,20 @@ step "Werkzeuge (xorriso, squashfs-tools, curl, ImageMagick)"
 as_dir package.use
 echo "sys-fs/squashfs-tools lzma zstd lz4 xattr" | write_root /etc/portage/package.use/gentoo-rice-iso
 emerge_pkgs dev-libs/libisoburn sys-fs/squashfs-tools net-misc/curl media-gfx/imagemagick
-if ! mksquashfs -help 2>&1 | grep -qw xz; then
+# Test: kleines xz-Abbild bauen (die Hilfe-Ausgabe listet die Kompressionen nicht in jeder Version)
+can_xz() {
+    local d; d=$(mktemp -d)
+    mkdir "$d/in" && echo x > "$d/in/f"
+    mksquashfs "$d/in" "$d/t.sqfs" -comp xz -noappend -quiet >/dev/null 2>&1
+    local rc=$?; rm -rf "$d"; return $rc
+}
+if ! can_xz; then
     info "squashfs-tools ohne xz → neu bauen mit USE=\"lzma zstd lz4\""
     $SUDO "${EMERGE_BASE[@]}" --oneshot --newuse --getbinpkg --binpkg-respect-use=y --quiet-build=y sys-fs/squashfs-tools >>"$LOG" 2>&1 || true
+    hash -r
 fi
-mksquashfs -help 2>&1 | grep -qw xz || die "squashfs-tools kann kein xz – sudo emerge -1 --newuse sys-fs/squashfs-tools"
+can_xz || die "squashfs-tools kann kein xz – sudo emerge -1 --newuse sys-fs/squashfs-tools (Details im Log)"
+ok "squashfs-tools mit xz"
 for t in xorriso unsquashfs mksquashfs curl sha256sum magick; do
     command -v "$t" >/dev/null || die "$t fehlt."
 done

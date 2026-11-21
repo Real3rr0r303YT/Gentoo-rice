@@ -118,7 +118,8 @@ done
 $SUDO install -d "$ROOT/etc/portage/package.accept_keywords" "$ROOT/etc/portage/package.use"
 printf '%s\n' "app-admin/calamares ~amd64" |
     $SUDO tee "$ROOT/etc/portage/package.accept_keywords/$SLUG" >/dev/null
-printf '%s\n' "sys-kernel/installkernel dracut" "sys-boot/grub grub_platforms_efi-64" "dev-libs/libpwquality python" |
+printf '%s\n' "sys-kernel/installkernel dracut" "sys-boot/grub grub_platforms_efi-64" "dev-libs/libpwquality python" \
+    "dev-libs/libdbusmenu gtk3" |
     $SUDO tee "$ROOT/etc/portage/package.use/$SLUG" >/dev/null
 info "Paketliste aktualisieren, Calamares + XFCE + Kernel installieren (10–30 Min.) …"
 mark=$(wc -l < "$LOG")
@@ -126,7 +127,8 @@ mark=$(wc -l < "$LOG")
 $SUDO chroot "$ROOT" /bin/bash -c '
     set -e
     source /etc/profile
-    # Paketliste der ISO ist alt → frisch holen, damit sie zu den aktuellen Binärpaketen passt
+    # Paketliste fehlt in der LiveGUI bzw. ist alt → anlegen und frisch holen
+    mkdir -p /var/db/repos/gentoo
     emerge-webrsync -q
     # Schlüssel für signierte Binärpakete
     command -v getuto >/dev/null && getuto >/dev/null 2>&1 || true

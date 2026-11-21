@@ -82,7 +82,7 @@ ok "$efi → /efi · $root → /"
 # ── Stage3 ────────────────────────────────────────────────
 step "Stage3 (desktop-openrc) laden"
 base="$MIRROR/releases/amd64/autobuilds"
-stage=$(curl -fsSL "$base/latest-stage3-amd64-desktop-openrc.txt" | awk '!/^#/ && NF {print $1; exit}')
+stage=$(curl -fsSL "$base/latest-stage3-amd64-desktop-openrc.txt" | awk '$1 ~ /\.tar\.xz$/ {print $1; exit}')
 [[ -n $stage ]] || die "Stage3-Version nicht ermittelbar."
 curl -fL --progress-bar -o "$MNT/stage3.tar.xz" "$base/$stage"
 if curl -fsSL -o "$MNT/stage3.sha256" "$base/$stage.sha256"; then

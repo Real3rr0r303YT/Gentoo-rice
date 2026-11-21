@@ -47,7 +47,15 @@ mkdir -p "$WORK" "$OUT"
 
 # ── 1. Werkzeuge ──────────────────────────────────────────
 step "Werkzeuge (xorriso, squashfs-tools, curl, ImageMagick)"
+# squashfs-tools braucht xz/zstd/lz4 – die LiveGUI-ISO ist so komprimiert
+as_dir package.use
+echo "sys-fs/squashfs-tools lzma zstd lz4 xattr" | write_root /etc/portage/package.use/gentoo-rice-iso
 emerge_pkgs dev-libs/libisoburn sys-fs/squashfs-tools net-misc/curl media-gfx/imagemagick
+if ! mksquashfs -help 2>&1 | grep -qw xz; then
+    info "squashfs-tools ohne xz → neu bauen mit USE=\"lzma zstd lz4\""
+    $SUDO "${EMERGE_BASE[@]}" --oneshot --newuse --getbinpkg --binpkg-respect-use=y --quiet-build=y sys-fs/squashfs-tools >>"$LOG" 2>&1 || true
+fi
+mksquashfs -help 2>&1 | grep -qw xz || die "squashfs-tools kann kein xz – sudo emerge -1 --newuse sys-fs/squashfs-tools"
 for t in xorriso unsquashfs mksquashfs curl sha256sum magick; do
     command -v "$t" >/dev/null || die "$t fehlt."
 done
@@ -84,7 +92,10 @@ xorriso -osirrox on -indev "$base_iso" -extract / "$ISO_DIR" >>"$LOG" 2>&1 || di
 chmod -R u+w "$ISO_DIR"
 SQUASH=$(find "$ISO_DIR" -maxdepth 3 \( -name '*.squashfs' -o -name 'squashfs.img' \) | head -n1)
 [[ -n $SQUASH ]] || die "Kein squashfs-Abbild in der ISO gefunden."
-$SUDO unsquashfs -q -d "$ROOT" "$SQUASH" >>"$LOG" 2>&1 || die "unsquashfs fehlgeschlagen."
+if ! $SUDO unsquashfs -q -d "$ROOT" "$SQUASH" >>"$LOG" 2>&1; then
+    tail -5 "$LOG" | sed 's/^/    /'
+    die "unsquashfs fehlgeschlagen (Kompression: $(unsquashfs -s "$SQUASH" 2>/dev/null | awk '/Compression/ {print $2}'))."
+fi
 ok "Root-Dateisystem ausgepackt ($(basename "$SQUASH"))"
 
 # ── 4. Pakete im Live-System: Calamares, Kernel für die Platte, GRUB ─
